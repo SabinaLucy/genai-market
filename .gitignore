@@ -1,7 +1,9 @@
-.env 
-data/raw/ 
-__pycache__/ 
-*.pt 
-*.pkl 
-.ipynb_checkpoints/ 
-
+.env
+data/raw/
+data/processed/
+__pycache__/
+*.pt
+*.pkl
+*.pkl
+.ipynb_checkpoints/
+logs/
