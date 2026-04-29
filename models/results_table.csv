@@ -2,6 +2,6 @@ model,mae,mae_ci_lo,mae_ci_hi,rmse,mape,dir_acc,notes
 Persistence (Naive),2.2295,2.0795,2.4018,3.5131,10.8,53.03,Null model — floor all others must beat
 ARIMA (Walk-Forward),2.258,1.9347,2.6512,3.4544,10.91,53.55,"ARIMA(1, 1, 1), walk-forward, log-VIX target"
 "GARCH(1,1)",11.3839,,,18.5493,43.04,60.38,Volatility model - metrics on vol forecast vs realised VIX movement
-LSTM (Multivariate),—,—,—,—,—,—,Primary model — Phase 5
+LSTM (Multivariate),4.3079,—,—,5.3682,26.39,54.79,"seq=60, hidden=128, best_ep=96, seed=42"
 Regime Classifier (XGBoost),—,—,—,—,—,—,Classification — Phase 6 (F1 per class)
 TFT (Optional),—,—,—,—,—,—,Stretch goal — Phase 6 only if time/hardware allow

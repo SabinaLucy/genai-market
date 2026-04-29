@@ -1,0 +1,43 @@
+{
+  "input_size": 12,
+  "hidden_size": 128,
+  "num_layers": 2,
+  "dropout": 0.2,
+  "n_horizons": 3,
+  "horizons": [
+    1,
+    5,
+    10
+  ],
+  "horizon_weights": [
+    0.20000000298023224,
+    0.6000000238418579,
+    0.20000000298023224
+  ],
+  "sequence_length": 60,
+  "feature_cols": [
+    "vix_lag1",
+    "vix_lag5",
+    "vix_lag21",
+    "vix_roll_mean5",
+    "vix_roll_std21",
+    "fedfunds",
+    "cpi",
+    "unrate",
+    "gs10",
+    "indpro",
+    "m2sl",
+    "sentiment"
+  ],
+  "target_col": "vix_log",
+  "best_epoch": 96,
+  "best_val_loss": 0.030319334522112093,
+  "total_epochs": 116,
+  "mean_grad_norm": 0.9229282648907767,
+  "diagnosis": "GOOD FIT \u2014-train and val losses are well aligned",
+  "seed": 42,
+  "train_end": "2018-12-31",
+  "val_end": "2022-12-31",
+  "n_params": 221827,
+  "has_attention": true
+}
