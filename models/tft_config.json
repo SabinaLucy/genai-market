@@ -1,0 +1,31 @@
+{
+  "n_features": 12,
+  "hidden_size": 32,
+  "n_heads": 4,
+  "dropout": 0.15,
+  "encoder_len": 60,
+  "pred_len": 5,
+  "best_epoch": 24,
+  "best_val_loss": 0.189767,
+  "diagnosis": "MILD OVERFITTING",
+  "mae": 7.9616,
+  "rmse": 8.8802,
+  "mape": 46.28,
+  "dir_acc": 53.36,
+  "beat_lstm": false,
+  "feature_cols": [
+    "vix_lag1",
+    "vix_lag5",
+    "vix_lag21",
+    "vix_roll_mean5",
+    "vix_roll_std21",
+    "fedfunds",
+    "cpi",
+    "unrate",
+    "gs10",
+    "indpro",
+    "m2sl",
+    "sentiment"
+  ],
+  "seed": 42
+}
