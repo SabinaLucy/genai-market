@@ -1,8 +1,8 @@
-Model,Type,MAE,MAE 95% CI,RMSE,MAPE (%),Dir. Acc (%),F1 Macro,Notes
-Persistence (Naive),Baseline,2.2295,"[2.08, 2.40]",3.5131,10.8,53.03,—,Null model - floor all others must beat — Phase 4
-ARIMA (Walk-Forward),Statistical,2.258,"[1.93, 2.65]",3.4544,10.91,53.55,—,"ARIMA(1,1,1), walk-forward, log-VIX target — Phase 4"
-"GARCH(1,1)",Statistical,11.3839,—,18.5493,43.04,60.38,—,Volatility model - metrics on vol forecast vs realised VIX - Phase 4
-LSTM (Multivariate),Deep Learning,4.3079,—,5.3682,26.39,54.79,—,"seq=60, hidden=128, best_ep=96, seed=42. MAE > Persistence (Persistence Paradox — low-vol test period) but Dir. Acc > baseline — Phase 5"
-LSTM + Conformal (t+5),Deep Learning + UQ,4.3079,—,5.3682,—,—,—,Coverage 95.8% (target 90%) | Width 22.62 VIX pts | AWP 23.619 — Phase 6
-Regime Classifier (XGBoost),Classification,—,—,—,—,—,0.506,F1: LOW=0.145 | ELEV=0.626 | CRISIS=0.748 | +5d labels | Platt-cal | HMM agree 40.1% — Phase 6
-TFT (Optional),Deep Learning,7.9616,—,8.8802,46.28,53.36,—,"From-scratch PyTorch TFT | hidden=32, heads=4, encoder=60 | best_ep=24 | LSTM outperformed TFT | Phase 6 stretch goal"
+Model,Type,MAE,MAE 95% CI,RMSE,MAPE (%),Dir. Acc (%),F1 Macro,Notes,top_driver_t5,shap_stability_rho,granger_sig_vars
+Persistence (Naive),Baseline,2.2295,"[2.08, 2.40]",3.5131,10.8,53.03,—,Null model - floor all others must beat — Phase 4,,,
+ARIMA (Walk-Forward),Statistical,2.258,"[1.93, 2.65]",3.4544,10.91,53.55,—,"ARIMA(1,1,1), walk-forward, log-VIX target — Phase 4",,,
+"GARCH(1,1)",Statistical,11.3839,—,18.5493,43.04,60.38,—,Volatility model - metrics on vol forecast vs realised VIX - Phase 4,,,
+LSTM (Multivariate),Deep Learning,4.3079,—,5.3682,26.39,54.79,—,"seq=60, hidden=128, best_ep=96, seed=42. MAE > Persistence (Persistence Paradox — low-vol test period) but Dir. Acc > baseline — Phase 5",vix_roll_mean5,1.0,indpro
+LSTM + Conformal (t+5),Deep Learning + UQ,4.3079,—,5.3682,—,—,—,Coverage 95.8% (target 90%) | Width 22.62 VIX pts | AWP 23.619 — Phase 6,vix_roll_mean5,1.0,indpro
+Regime Classifier (XGBoost),Classification,—,—,—,—,—,0.506,F1: LOW=0.145 | ELEV=0.626 | CRISIS=0.748 | +5d labels | Platt-cal | HMM agree 40.1% — Phase 6,,,
+TFT (Optional),Deep Learning,7.9616,—,8.8802,46.28,53.36,—,"From-scratch PyTorch TFT | hidden=32, heads=4, encoder=60 | best_ep=24 | LSTM outperformed TFT | Phase 6 stretch goal",,,
