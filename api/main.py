@@ -289,7 +289,7 @@ def _lstm_predict_latest(horizon: int = 5) -> dict:
     pred_vix  = float(np.exp(preds_log[h_idx]))
 
     conf_model = state.conformal_data["conformal_models"][horizon]
-    half_width = float(conf_model.quantile_)
+    half_width = float(conf_model["hat_q"])
     pred_log   = float(preds_log[h_idx])
     lo         = float(np.exp(pred_log - half_width))
     hi         = float(np.exp(pred_log + half_width))
