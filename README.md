@@ -1,10 +1,12 @@
-# GenAI Financial Market Stress Intelligence System 
-
-An end-to-end AI system that forecasts financial market stress, classifies
-volatility regimes, and generates automated risk intelligence bulletins.
-
-🔄 **Active personal project  - Phase 7 of 10**
-
+---
+title: Volarix
+emoji: 📈
+colorFrom: purple
+colorTo: purple
+sdk: docker
+pinned: false
+license: mit
+short_description: AI Financial Market Stress Intelligence System
 ---
 
-*Full documentation coming soon.*
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
