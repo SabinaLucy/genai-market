@@ -2,32 +2,6 @@
 api/main.py
 ===========
 Volarix FastAPI backend — Phase 9
-
-Endpoints
----------
-GET  /health      — container health check (used by HF Spaces)
-GET  /models      — loaded model metadata
-GET  /latest      — current VIX and regime
-POST /predict     — LSTM forecast + conformal interval + regime probs
-GET  /bulletin    — generate GenAI risk bulletin for latest date
-GET  /analogues   — top 3 historical analogues for latest date
-GET  /shap        — top 5 SHAP feature importances
-POST /ask         — financial Q&A with optional bulletin context
-GET  /backtest    — pre-computed backtest stats (naive + hysteresis vs SPY)
-
-Additions beyond base plan
---------------------------
-1. /health endpoint with uptime + model status
-2. Startup timing log — prints load time per model
-3. /backtest endpoint — pre-computed at startup
-4. regime_color field in every regime-bearing response
-5. /models metadata endpoint
-6. Cache-Control + Last-Modified headers on /latest
-7. nan → null JSON serialiser (NaN is invalid JSON, breaks JS)
-8. upload_to_hub.py --tag versioning (separate script)
-
-Rate limiting (slowapi)
------------------------
 /bulletin and /ask: max 5 requests per IP per hour
 """
 
@@ -59,7 +33,7 @@ from slowapi.util import get_remote_address
 
 load_dotenv()
 
-# ── Import src modules ────────────────────────────────────────────────────────
+#  Import src modules 
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -73,7 +47,7 @@ from src.bulletin_generator import (
     build_prediction_dict,
 )
 
-# ── Constants ─────────────────────────────────────────────────────────────────
+#  Constants
 
 HF_REPO_ID   = "SabinaLucy/volarix-models"
 MODEL_TAG    = os.getenv("VOLARIX_MODEL_TAG", "").strip()   # e.g. "v2" or ""
@@ -95,7 +69,7 @@ REGIME_META = {
     "CRISIS"   : {"label": "[ALERT]",  "hex": "#DC2626", "tailwind": "bg-red-600"},
 }
 
-# ── JSON serialiser — converts numpy / nan to Python / null ──────────────────
+#  JSON serialiser — converts numpy / nan to Python / null 
 
 class SafeJSONResponse(JSONResponse):
     """Replaces NaN/Inf with null so the browser never sees invalid JSON."""
@@ -143,8 +117,7 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
-# ── Regime helpers ────────────────────────────────────────────────────────────
-
+#  Regime helpers 
 def regime_payload(regime: str) -> dict:
     """Return regime string + color metadata as a dict ready for JSON."""
     meta = REGIME_META.get(regime, REGIME_META["ELEVATED"])
@@ -156,8 +129,7 @@ def regime_payload(regime: str) -> dict:
     }
 
 
-# ── HF Hub download helper ────────────────────────────────────────────────────
-
+#  HF Hub download helper 
 def hub_download(filename: str) -> str:
     """Download a file from HF Hub and return local path. Cached by huggingface_hub."""
     subfolder = MODEL_TAG if MODEL_TAG else None
@@ -170,7 +142,7 @@ def hub_download(filename: str) -> str:
     )
 
 
-# ── App state (loaded once at startup) ───────────────────────────────────────
+#  App state (loaded once at startup) 
 
 class AppState:
     lstm_model      : LSTMModel             = None
@@ -192,12 +164,11 @@ class AppState:
 
 state = AppState()
 
-# ── Rate limiter ──────────────────────────────────────────────────────────────
+#  Rate limiter 
 
 limiter = Limiter(key_func=get_remote_address)
 
-# ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
-
+#  Lifespan (startup / shutdown) 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     t_total = time.time()
@@ -207,10 +178,9 @@ async def lifespan(app: FastAPI):
     print(f"Tag    : {MODEL_TAG or '(none)'}")
     print("=" * 60)
 
-    # ── 1. master_df ─────────────────────────────────────────────────────────
+    #  1. master_df 
     t = time.time()
-    df_path = os.getenv("MASTER_DF_PATH", "data/processed/master_df.csv")
-    state.master_df = pd.read_csv(df_path, index_col="date", parse_dates=True)
+    state.master_df = pd.read_csv("data/processed/master_df.csv", index_col="date", parse_dates=True)
     train_mask = state.master_df.index <= "2018-12-31"
     val_mask   = (state.master_df.index > "2018-12-31") & (state.master_df.index <= VAL_END)
     test_mask  = state.master_df.index > VAL_END
@@ -218,7 +188,7 @@ async def lifespan(app: FastAPI):
     state.latest_vix_date = str(state.master_df.index[-1].date())
     print(f"  master_df        {time.time()-t:.1f}s  ({len(state.master_df)} rows)")
 
-    # ── 2. scaler ────────────────────────────────────────────────────────────
+    #  2. scaler 
     t = time.time()
     scaler_path = hub_download("scaler.pkl")
     state.scaler = joblib.load(scaler_path)
@@ -227,7 +197,7 @@ async def lifespan(app: FastAPI):
         state.scaler_features = json.load(f)
     print(f"  scaler           {time.time()-t:.1f}s")
 
-    # ── 3. LSTM ───────────────────────────────────────────────────────────────
+    #  3. LSTM 
     t = time.time()
     cfg_path = hub_download("lstm_config.json")
     with open(cfg_path) as f:
@@ -246,7 +216,7 @@ async def lifespan(app: FastAPI):
     state.lstm_model.eval()
     print(f"  LSTM             {time.time()-t:.1f}s  (best epoch {state.lstm_config.get('best_epoch')})")
 
-    # ── 4. Regime classifier ──────────────────────────────────────────────────
+    #  4. Regime classifier 
     t = time.time()
     clf_path = hub_download("regime_classifier.pkl")
     clf_bundle = joblib.load(clf_path)
@@ -255,25 +225,25 @@ async def lifespan(app: FastAPI):
     state.clf_feature_cols  = clf_bundle["clf_feature_cols"]
     print(f"  regime clf       {time.time()-t:.1f}s")
 
-    # ── 5. Conformal intervals ────────────────────────────────────────────────
+    #  5. Conformal intervals 
     t = time.time()
     conf_path = hub_download("conformal_intervals.pkl")
     state.conformal_data = joblib.load(conf_path)
     print(f"  conformal        {time.time()-t:.1f}s  (alpha={state.conformal_data.get('alpha', 0.1)})")
 
-    # ── 6. Explainability cache ───────────────────────────────────────────────
+    #  6. Explainability cache 
     t = time.time()
     expl_path = hub_download("explainability_cache.pkl")
     state.expl_cache = joblib.load(expl_path)
     print(f"  explainability   {time.time()-t:.1f}s")
 
-    # ── 7. HMM ───────────────────────────────────────────────────────────────
+    # 7. HMM 
     t = time.time()
     hmm_path = hub_download("hmm_regime.pkl")
     state.hmm_data = joblib.load(hmm_path)
     print(f"  HMM              {time.time()-t:.1f}s")
 
-    # ── 8. Pre-compute backtest ───────────────────────────────────────────────
+    #  8. Pre-compute backtest 
     t = time.time()
     try:
         regime_signal = pd.Series(
@@ -302,7 +272,7 @@ async def lifespan(app: FastAPI):
         print(f"  backtest         FAILED ({exc}) — /backtest endpoint will return 503")
         state.backtest_results = None
 
-    # ── Done ──────────────────────────────────────────────────────────────────
+    #  Done 
     state.startup_time = time.time() - t_total
     state.startup_ts   = datetime.now(timezone.utc)
     print("=" * 60)
@@ -314,7 +284,7 @@ async def lifespan(app: FastAPI):
     print("Volarix API — shutting down")
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
+#  App 
 
 app = FastAPI(
     title       = "Volarix — Financial Market Stress Intelligence",
@@ -335,7 +305,7 @@ app.add_middleware(
 )
 
 
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
+#  Pydantic schemas 
 
 class PredictRequest(BaseModel):
     horizon: int = 5   # 1, 5, or 10
@@ -345,7 +315,7 @@ class AskRequest(BaseModel):
     bulletin_context: Optional[str] = None
 
 
-# ── Inference helpers ─────────────────────────────────────────────────────────
+#  Inference helpers 
 
 def _get_latest_feature_vector() -> tuple[np.ndarray, pd.Timestamp]:
     """Return the feature vector and date for the most recent row in master_df."""
@@ -400,9 +370,9 @@ def _regime_predict_latest() -> dict:
     return {"regime": pred_cls, "regime_probabilities": prob_map}
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+#  Routes 
 
-# 1. Health ─────────────────────────────────────────────────────────────────
+# 1. Health 
 
 @app.get("/health", tags=["meta"])
 def health():
@@ -422,11 +392,10 @@ def health():
     })
 
 
-# 2. Models metadata ────────────────────────────────────────────────────────
-
+# 2. Models metadata 
 @app.get("/models", tags=["meta"])
 def models_meta():
-    """Loaded model configuration — useful for debugging the live Space."""
+    """Loaded model configuration """
     if state.lstm_config is None:
         raise HTTPException(503, "Models not yet loaded")
     return safe_json({
@@ -439,7 +408,7 @@ def models_meta():
     })
 
 
-# 3. Latest ─────────────────────────────────────────────────────────────────
+# 3. Latest 
 
 @app.get("/latest", tags=["data"])
 def latest(response: Response):
@@ -467,7 +436,7 @@ def latest(response: Response):
     })
 
 
-# 4. Predict ────────────────────────────────────────────────────────────────
+# 4. Predict 
 
 @app.post("/predict", tags=["forecast"])
 def predict_endpoint(req: PredictRequest):
@@ -511,7 +480,7 @@ def predict_endpoint(req: PredictRequest):
         raise HTTPException(500, f"Prediction failed: {exc}")
 
 
-# 5. Bulletin ───────────────────────────────────────────────────────────────
+# 5. Bulletin 
 
 @app.get("/bulletin", tags=["genai"])
 @limiter.limit("5/hour")
@@ -583,7 +552,7 @@ def bulletin(request: Request):
         raise HTTPException(500, f"Bulletin generation failed: {exc}")
 
 
-# 6. Analogues ──────────────────────────────────────────────────────────────
+# 6. Analogues 
 
 @app.get("/analogues", tags=["forecast"])
 def analogues():
@@ -621,7 +590,7 @@ def analogues():
         raise HTTPException(500, f"Analogue search failed: {exc}")
 
 
-# 7. SHAP ───────────────────────────────────────────────────────────────────
+# 7. SHAP 
 
 @app.get("/shap", tags=["explainability"])
 def shap():
@@ -655,7 +624,7 @@ def shap():
         raise HTTPException(500, f"SHAP retrieval failed: {exc}")
 
 
-# 8. Ask ────────────────────────────────────────────────────────────────────
+# 8. Ask 
 
 @app.post("/ask", tags=["genai"])
 @limiter.limit("5/hour")
@@ -675,8 +644,7 @@ def ask(request: Request, body: AskRequest):
         raise HTTPException(500, f"Q&A failed: {exc}")
 
 
-# 9. Backtest ───────────────────────────────────────────────────────────────
-
+# 9. Backtest 
 @app.get("/backtest", tags=["backtest"])
 def backtest():
     """
