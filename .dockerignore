@@ -1,12 +1,8 @@
-# Never bake secrets or large binary files into the Docker image.
-# Model files are downloaded from HF Hub at startup — not baked in.
-
 .env
 *.pt
 *.pkl
 *.ckpt
 data/raw/
-data/processed/
 __pycache__/
 **/__pycache__/
 *.pyc
