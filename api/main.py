@@ -76,7 +76,9 @@ class SafeJSONResponse(JSONResponse):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, pd.Timestamp):
-            return str(obj.date())
+           return str(obj.date())
+        if hasattr(obj, 'isoformat'):
+           return str(obj)
         raise TypeError(f"Object of type {type(obj)} is not JSON serialisable")
 
 
@@ -96,6 +98,8 @@ def _clean(obj: Any) -> Any:
         return None if (math.isnan(v) or math.isinf(v)) else v
     if isinstance(obj, (np.integer,)):
         return int(obj)
+    if hasattr(obj, 'isoformat'):
+        return str(obj)
     return obj
 
 
