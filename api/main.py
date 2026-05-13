@@ -17,7 +17,7 @@ import yfinance as yf
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from huggingface_hub import hf_hub_download
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -59,6 +59,18 @@ REGIME_META = {
     "CRISIS"   : {"label": "[ALERT]",  "hex": "#DC2626", "tailwind": "bg-red-600"},
 }
 
+# Seconds to wait for a live VIX fetch before falling back to CSV value.
+LIVE_VIX_TIMEOUT_SECS = 5
+
+
+# Clamp hat_q so conformal intervals never explode.
+# exp(log_vix +/- 1.5) is already a very wide interval (~4.5x the predicted VIX).
+# Calibrated hat_q should be well below 0.5 — anything above 1.5 is a bug.
+HAT_Q_MAX = 1.5
+
+
+
+# JSON helpers
 
 class SafeJSONResponse(JSONResponse):
     def render(self, content: Any) -> bytes:
@@ -124,6 +136,43 @@ def hub_download(filename: str) -> str:
     )
 
 
+
+#  Live VIX fetch helper
+
+def _fetch_live_vix() -> tuple[float | None, str | None]:
+    """
+    Fetch today's VIX close from Yahoo Finance.
+
+    Uses ticker.history(period='5d') which is lightweight — no full download.
+    Returns (vix_value, date_str) on success, (None, None) on any failure.
+    The timeout is short so /latest stays fast even when Yahoo is slow.
+    """
+    try:
+        ticker = yf.Ticker("^VIX")
+        hist   = ticker.history(period="5d", timeout=LIVE_VIX_TIMEOUT_SECS)
+        if hist.empty:
+            print("  [live VIX] empty response from Yahoo Finance")
+            return None, None
+        vix_value = round(float(hist["Close"].iloc[-1]), 2)
+        date_str  = str(hist.index[-1].date())
+        print(f"  [live VIX] {vix_value} on {date_str}")
+        return vix_value, date_str
+    except Exception as exc:
+        print(f"  [live VIX] fetch failed — {exc}")
+        return None, None
+
+
+def _vix_to_regime(vix: float) -> str:
+    """Derive regime from VIX value using the Phase 1 thresholds."""
+    if vix < 20:
+        return "LOW"
+    if vix < 30:
+        return "ELEVATED"
+    return "CRISIS"
+
+
+# App state
+
 class AppState:
     lstm_model      : LSTMModel    = None
     lstm_config     : dict         = None
@@ -147,6 +196,10 @@ state   = AppState()
 limiter = Limiter(key_func=get_remote_address)
 
 
+
+# Lifespan
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     t_total = time.time()
@@ -157,7 +210,9 @@ async def lifespan(app: FastAPI):
     print("=" * 60)
 
     t = time.time()
-    state.master_df = pd.read_csv("data/processed/master_df.csv", index_col="date", parse_dates=True)
+    state.master_df = pd.read_csv(
+        "data/processed/master_df.csv", index_col="date", parse_dates=True
+    )
     test_mask = state.master_df.index > VAL_END
     state.test_df = state.master_df[test_mask].copy()
     state.latest_vix_date = str(state.master_df.index[-1].date())
@@ -198,6 +253,12 @@ async def lifespan(app: FastAPI):
     t = time.time()
     conf_path = hub_download("conformal_intervals.pkl")
     state.conformal_data = joblib.load(conf_path)
+    # FIX 2 — log raw hat_q values at startup so we can diagnose calibration issues
+    for h, cm in state.conformal_data.get("conformal_models", {}).items():
+        raw_q    = cm.get("hat_q", "?")
+        clamped  = min(float(raw_q), HAT_Q_MAX) if isinstance(raw_q, (int, float)) else raw_q
+        flag     = "  *** CLAMPED ***" if isinstance(raw_q, (int, float)) and raw_q > HAT_Q_MAX else ""
+        print(f"    horizon {h:>2}d  hat_q={raw_q}  clamped_to={clamped}{flag}")
     print(f"  conformal        {time.time()-t:.1f}s  (alpha={state.conformal_data.get('alpha', 0.1)})")
 
     t = time.time()
@@ -213,6 +274,7 @@ async def lifespan(app: FastAPI):
     except Exception as hmm_exc:
         print(f"  HMM              SKIPPED ({hmm_exc})")
 
+    # FIX 3 — backtest SPY download wrapped in retry with exponential backoff
     t = time.time()
     try:
         regime_signal = pd.Series(
@@ -247,6 +309,9 @@ async def lifespan(app: FastAPI):
     print("Volarix API — shutting down")
 
 
+
+# App init
+
 app = FastAPI(
     title       = "Volarix — Financial Market Stress Intelligence",
     description = "LSTM + GenAI risk bulletin for VIX forecasting",
@@ -266,12 +331,20 @@ app.add_middleware(
 )
 
 
+
+# Request models
+
+
 class PredictRequest(BaseModel):
     horizon: int = 5
 
 class AskRequest(BaseModel):
     question        : str
     bulletin_context: Optional[str] = None
+
+
+
+# Inference helpers
 
 
 def _get_latest_feature_vector() -> tuple[np.ndarray, pd.Timestamp]:
@@ -293,10 +366,14 @@ def _lstm_predict_latest(horizon: int = 5) -> dict:
     pred_vix  = float(np.exp(preds_log[h_idx]))
 
     conf_model = state.conformal_data["conformal_models"][horizon]
-    half_width = float(conf_model["hat_q"])
-    pred_log   = float(preds_log[h_idx])
-    lo         = float(np.exp(pred_log - half_width))
-    hi         = float(np.exp(pred_log + half_width))
+    raw_hat_q  = float(conf_model["hat_q"])
+
+    # FIX 2 — clamp before exponentiating so the interval is always finite
+    half_width = min(raw_hat_q, HAT_Q_MAX)
+
+    pred_log = float(preds_log[h_idx])
+    lo       = float(np.exp(pred_log - half_width))
+    hi       = float(np.exp(pred_log + half_width))
 
     return {
         "predicted_vix" : round(pred_vix, 2),
@@ -306,6 +383,8 @@ def _lstm_predict_latest(horizon: int = 5) -> dict:
         "confidence_pct": round((1 - state.conformal_data.get("alpha", 0.1)) * 100),
         "attn_weights"  : attn.tolist(),
         "preds_log_all" : preds_log.tolist(),
+        "hat_q_raw"     : round(raw_hat_q, 4),   # visible in /predict so you can debug calibration
+        "hat_q_clamped" : half_width != raw_hat_q,
     }
 
 
@@ -316,6 +395,15 @@ def _regime_predict_latest() -> dict:
     pred_cls = classes[int(np.argmax(proba))]
     prob_map = {cls: round(float(p), 4) for cls, p in zip(classes, proba)}
     return {"regime": pred_cls, "regime_probabilities": prob_map}
+
+
+
+# Endpoints
+
+@app.get("/", include_in_schema=False)
+def root():
+    """Redirect bare URL to interactive API docs."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health", tags=["meta"])
@@ -350,22 +438,40 @@ def models_meta():
 
 @app.get("/latest", tags=["data"])
 def latest(response: Response):
+    """
+    Returns the most recent VIX value and regime classification.
+
+    """
     if state.master_df is None:
         raise HTTPException(503, "Data not loaded")
-    row         = state.master_df.iloc[-1]
-    date_str    = str(state.master_df.index[-1].date())
-    current_vix = round(float(row["vix"]), 2)
-    regime_str  = str(row.get("regime_label", "ELEVATED"))
+
+    live_vix, live_date = _fetch_live_vix()
+
+    if live_vix is not None:
+        current_vix = live_vix
+        date_str    = live_date
+        regime_str  = _vix_to_regime(live_vix)
+        data_source = "live"
+    else:
+        row         = state.master_df.iloc[-1]
+        date_str    = str(state.master_df.index[-1].date())
+        current_vix = round(float(row["vix"]), 2)
+        regime_str  = str(row.get("regime_label", "ELEVATED"))
+        data_source = "csv_fallback"
+
     response.headers["Cache-Control"] = "public, max-age=60"
     response.headers["Last-Modified"] = datetime.now(timezone.utc).strftime(
         "%a, %d %b %Y %H:%M:%S GMT"
     )
+
     return safe_json({
-        "date"     : date_str,
-        "vix"      : current_vix,
-        "vix_log"  : round(float(np.log(current_vix)), 4),
+        "date"       : date_str,
+        "vix"        : current_vix,
+        "vix_log"    : round(float(np.log(current_vix)), 4),
         **regime_payload(regime_str),
-        "sentiment": round(float(row.get("sentiment", 0.0)), 4),
+        "sentiment"  : round(float(state.master_df["sentiment"].iloc[-1]), 4),
+        "data_source": data_source,
+        "csv_date"   : state.latest_vix_date,
     })
 
 
@@ -394,6 +500,8 @@ def predict_endpoint(req: PredictRequest):
             "interval_lo"         : lstm_out["interval_lo"],
             "interval_hi"         : lstm_out["interval_hi"],
             "confidence_pct"      : lstm_out["confidence_pct"],
+            "hat_q_raw"           : lstm_out["hat_q_raw"],
+            "hat_q_clamped"       : lstm_out["hat_q_clamped"],
             **regime_payload(regime_out["regime"]),
             "regime_probabilities": regime_out["regime_probabilities"],
         }))
@@ -508,11 +616,11 @@ def shap():
             le             = state.regime_le,
         )
         return safe_json(_clean({
-            "date"        : state.latest_vix_date,
+            "date"         : state.latest_vix_date,
             **regime_payload(reg_out["regime"]),
-            "top_drivers" : drivers["top_drivers"],
+            "top_drivers"  : drivers["top_drivers"],
             "stability_rho": drivers.get("stability_rho"),
-            "granger_sig" : drivers.get("granger_sig", []),
+            "granger_sig"  : drivers.get("granger_sig", []),
         }))
     except Exception as exc:
         traceback.print_exc()

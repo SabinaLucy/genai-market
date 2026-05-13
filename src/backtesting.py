@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import numpy  as np
 import pandas as pd
 import yfinance as yf
@@ -11,6 +13,47 @@ HYSTERESIS_OUT   = 3        # consecutive non-CRISIS signals to exit cash
 RISK_FREE_RATE   = 0.04     # annualised, used for Sharpe ratio
 
 
+
+def _download_spy_with_retry(
+    start:       str,
+    end:         str,
+    max_retries: int   = 3,
+    base_wait:   float = 2.0,
+) -> pd.DataFrame:
+    """
+    Download SPY daily OHLCV with exponential backoff retry.
+
+    Yahoo Finance rate-limits the HF Spaces IP on cold starts. Three attempts
+    with 2s → 4s → 8s waits between them resolves this in practice.
+
+    Returns raw yfinance DataFrame, or raises RuntimeError after all retries.
+    """
+    last_exc = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            df = yf.download(
+                "SPY",
+                start       = start,
+                end         = end,
+                progress    = False,
+                auto_adjust = True,
+            )
+            if df.empty:
+                raise ValueError("yf.download returned empty DataFrame")
+            print(f"  [SPY] downloaded {len(df)} rows (attempt {attempt})")
+            return df
+        except Exception as exc:
+            last_exc = exc
+            wait = base_wait * (2 ** (attempt - 1))   # 2s, 4s, 8s
+            print(f"  [SPY] attempt {attempt}/{max_retries} failed — {exc}")
+            if attempt < max_retries:
+                print(f"  [SPY] retrying in {wait:.0f}s …")
+                time.sleep(wait)
+
+    raise RuntimeError(
+        f"SPY download failed after {max_retries} attempts. Last error: {last_exc}"
+    )
+
 def download_spy(start: str, end: str) -> pd.DataFrame:
     """
     Download SPY daily close prices via yfinance for the given date range.
@@ -18,7 +61,7 @@ def download_spy(start: str, end: str) -> pd.DataFrame:
     Returns DataFrame with columns: spy_close, spy_return.
     Timezone info is stripped for consistent index alignment.
     """
-    raw = yf.download('SPY', start=start, end=end, progress=False)
+    raw = _download_spy_with_retry(start, end)
     spy = raw[['Close']].copy()
     spy.columns = ['spy_close']
     spy.index   = pd.to_datetime(spy.index)
@@ -204,7 +247,7 @@ def compute_backtest_stats(
     excess  = rets - rf_daily
     sharpe  = float(excess.mean() / (excess.std() + 1e-10) * np.sqrt(trading_days))
 
-    cum     = df[cum_col].dropna()
+    cum      = df[cum_col].dropna()
     roll_max = cum.cummax()
     drawdown = (cum - roll_max) / roll_max
     max_dd   = float(drawdown.min())
@@ -234,8 +277,8 @@ def run_full_backtest(
     """
     End-to-end backtest pipeline called by Phase 9 API at startup.
 
-    Downloads SPY, aligns with regime signal, runs both naive and
-    hysteresis strategies, and returns all stats in a single dict.
+    Downloads SPY with retry+backoff, aligns with regime signal, runs both
+    naive and hysteresis strategies, and returns all stats in a single dict.
 
     Parameters
     ----------
