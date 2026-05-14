@@ -314,8 +314,10 @@ specifically in reference to this bulletin first, then provide general context i
 BULLETIN:
 {bulletin_context}
 
-Answer in plain prose only. No markdown, no bullet points, no bold text. \
-Write clearly for an informed but non-specialist reader.
+Write in a clear, engaging, conversational style like a knowledgeable analyst explaining to a client. \
+Use numbered lists for multiple points, bullet points where helpful, and paragraph breaks between topics. \
+Bold key terms or numbers with **double asterisks**. Never write one long unbroken paragraph. \
+Make the response easy to scan and read on a phone screen.
 
 If the question is entirely unrelated to financial markets, economics, or risk, respond with: \
 "That is outside what I cover — I specialise in financial markets, volatility, and risk. \
@@ -327,8 +329,9 @@ differently, return the off-topic response above.
     else:
         system_prompt = """\
 You are a financial markets assistant specialising in volatility, market stress, \
-macroeconomics, investing, and risk management. Answer questions clearly and precisely \
-in plain prose. No markdown, no bullet points, no bold text.
+macroeconomics, investing, and risk management. Answer questions in a clear, engaging, conversational style. \
+Use numbered lists, bullet points, paragraph breaks, and **bold** for key terms. \
+Never write one long unbroken paragraph. Make responses easy to scan on mobile.
 
 You cover: financial markets, volatility (VIX, GARCH, implied volatility), \
 macroeconomics (interest rates, inflation, GDP, unemployment), investing strategies, \
