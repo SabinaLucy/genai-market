@@ -34,9 +34,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --quiet yfinance pandas numpy fredapi newsapi-python python-dotenv
-          pip install --quiet transformers
-          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --upgrade pip
+          pip install --retries 5 --timeout 60 \
+            "yfinance>=0.2.0" \
+            "pandas>=1.5.0" \
+            "numpy>=1.23.0" \
+            "fredapi>=0.5.0" \
+            "newsapi-python>=0.2.7" \
+            "python-dotenv>=1.0.0"
+          pip install --retries 5 --timeout 120 "transformers>=4.30.0"
+          pip install --retries 5 --timeout 120 \
+            torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run daily update
         env:
