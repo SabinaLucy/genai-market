@@ -34,15 +34,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --quiet \
-            yfinance \
-            pandas \
-            numpy \
-            fredapi \
-            newsapi-python \
-            transformers \
-            torch --index-url https://download.pytorch.org/whl/cpu \
-            python-dotenv
+          pip install --quiet yfinance pandas numpy fredapi newsapi-python python-dotenv
+          pip install --quiet transformers
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run daily update
         env:
