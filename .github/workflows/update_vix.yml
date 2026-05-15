@@ -57,14 +57,17 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SabinaLucy/genai-market.git
+          git stash
           git fetch origin main
-          git reset --soft HEAD~0
-          git pull --rebase origin main
+          git rebase origin/main
+          git stash pop || true
           git add data/processed/master_df.csv
-          git diff --cached --quiet || (
-            git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')" &&
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
             git push origin main
-          )
+          else
+            echo "No changes to commit"
+          fi
 
       - name: Restart HuggingFace Space
         if: success()
