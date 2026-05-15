@@ -346,12 +346,6 @@ differently, return the off-topic response above.
 """
 
     # For clearly off-topic questions, skip the API call entirely
-    if not is_financial and not bulletin_context:
-        words = set(q_lower.split())
-        financial_words = set(t.replace(' ', '_') for t in FINANCIAL_TOPICS)
-        if not words.intersection({'market', 'risk', 'invest', 'finance', 'vix',
-                                   'volatil', 'rate', 'inflation', 'stock', 'bond'}):
-            return OFF_TOPIC_RESPONSE
 
     return _call_llm(system_prompt, question)
 
