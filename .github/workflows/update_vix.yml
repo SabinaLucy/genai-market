@@ -7,10 +7,12 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PIP_NO_CACHE_DIR: 0
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 40
 
     steps:
@@ -21,34 +23,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('scripts/update_master_df.py') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Cache HuggingFace models
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/huggingface
-          key: ${{ runner.os }}-hf-finbert
-          restore-keys: ${{ runner.os }}-hf-
-
-      - name: Verify network and install dependencies
+      - name: Test network
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install yfinance
-          pip install pandas numpy
-          pip install fredapi
-          pip install newsapi-python
-          pip install python-dotenv
-          pip install transformers sentencepiece
+          curl -I https://pypi.org || echo "PyPI unreachable"
+          python -m pip install --upgrade pip
+
+      - name: Install core packages
+        run: pip install yfinance pandas numpy fredapi newsapi-python python-dotenv
+
+      - name: Install ML packages
+        run: |
+          pip install transformers
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          echo "All packages installed successfully"
-          python -c "import yfinance; print('yfinance OK:', yfinance.__version__)"
-          python -c "import pandas; print('pandas OK:', pandas.__version__)"
+
+      - name: Verify installs
+        run: |
+          python -c "import yfinance; print('yfinance', yfinance.__version__)"
+          python -c "import pandas; print('pandas', pandas.__version__)"
 
       - name: Run daily update
         env:
