@@ -57,6 +57,8 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SabinaLucy/genai-market.git
+          git fetch origin main
+          git reset --soft HEAD~0
           git pull --rebase origin main
           git add data/processed/master_df.csv
           git diff --cached --quiet || (
