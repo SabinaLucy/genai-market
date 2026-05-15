@@ -7,8 +7,6 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  PIP_NO_CACHE_DIR: 0
-  PIP_DISABLE_PIP_VERSION_CHECK: 1
 
 jobs:
   update:
@@ -26,7 +24,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Test network
         run: |
