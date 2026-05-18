@@ -50,27 +50,17 @@ jobs:
           NEWSAPI_KEY:  ${{ secrets.NEWSAPI_KEY }}
         run: python scripts/update_master_df.py
 
-      - name: Commit and push if master_df changed
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SabinaLucy/genai-market.git
-          git fetch origin
-          git add data/processed/master_df.csv
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
-            git push origin HEAD:refs/heads/main --force
-          else
-            echo "No changes to commit"
-          fi
-
       - name: Push updated CSV to HuggingFace Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add space https://SabinaLucy:$HF_TOKEN@huggingface.co/spaces/SabinaLucy/volarix.git || true
-          git push space main --force
-
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/processed/master_df.csv
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
+          git remote add space https://SabinaLucy:${HF_TOKEN}@huggingface.co/spaces/SabinaLucy/volarix.git
+          git push space HEAD:main --force
 
       - name: Restart HuggingFace Space
         if: success()
