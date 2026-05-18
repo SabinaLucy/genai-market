@@ -58,7 +58,7 @@ jobs:
           git add data/processed/master_df.csv
           if ! git diff --cached --quiet; then
             git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
-            git push origin HEAD:main
+            git push origin HEAD:main --force
           else
             echo "No changes to commit"
           fi
