@@ -63,6 +63,14 @@ jobs:
             echo "No changes to commit"
           fi
 
+      - name: Push updated CSV to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add space https://SabinaLucy:$HF_TOKEN@huggingface.co/spaces/SabinaLucy/volarix.git || true
+          git push space main --force
+
+
       - name: Restart HuggingFace Space
         if: success()
         env:
