@@ -83,9 +83,17 @@ function inlineFmt(text) {
   )
 }
 
+const STORAGE_KEY = 'volarix_chat_history'
+const MAX_MESSAGES = 50 // keep last 50 messages
+
 export default function AskPage({ bulletinData, latest }) {
   const isMobile = useIsMobile()
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState(() => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch { return [] }
+})
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
@@ -99,6 +107,20 @@ export default function AskPage({ bulletinData, latest }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+
+  /* Save to localStorage whenever messages change */
+useEffect(() => {
+  try {
+    const toSave = messages.slice(-MAX_MESSAGES)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+  } catch {}
+}, [messages])
+
+const clearHistory = () => {
+  setMessages([])
+  localStorage.removeItem(STORAGE_KEY)
+}
 
   const send = async (q) => {
     q = (typeof q === 'string' ? q : input).trim()
@@ -202,6 +224,14 @@ const res = await fetchAsk(q, context)
             regimeLabel={latest?.data?.regime_label}
           />
 
+          {messages.length > 0 && (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 14px 0', background: 'var(--bg-app)' }}>
+    <button onClick={clearHistory} style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>
+      Clear history
+    </button>
+  </div>
+)}
+
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
@@ -285,9 +315,15 @@ const res = await fetchAsk(q, context)
 
         </div>
       ) : (
-        /* ── DESKTOP — unchanged ── */
+        /* ── DESKTOP  */
         <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <PageHeader title="Ask Volarix" subtitle="Chat with the model · 5 requests/hour" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label} />
+          <PageHeader title="Ask Volarix" subtitle="Chat with the model · 5 requests/hour" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
+  {messages.length > 0 && (
+    <button onClick={clearHistory} style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      Clear history
+    </button>
+  )}
+</PageHeader>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.length === 0 && (

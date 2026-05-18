@@ -10,5 +10,6 @@ export const fetchAnalogues= ()           => api.get('/analogues')
 export const fetchShap     = ()           => api.get('/shap')
 export const fetchBacktest = ()           => api.get('/backtest')
 export const fetchBulletin = ()           => api.get('/bulletin')
+export const fetchHeadlines= ()           => api.get('/headlines')
 export const fetchAsk      = (question, bulletin_context) =>
   api.post('/ask', { question, bulletin_context })

@@ -640,6 +640,51 @@ def ask(request: Request, body: AskRequest):
         traceback.print_exc()
         raise HTTPException(500, f"Q&A failed: {exc}")
 
+# Headlines cache — refreshes every hour to protect NewsAPI free tier (100 req/day)
+_headlines_cache: dict = {"data": [], "timestamp": 0.0}
+
+@app.get("/headlines", tags=["data"])
+def get_headlines():
+    """Fetch today's top financial headlines from NewsAPI with 1-hour cache."""
+    global _headlines_cache
+
+    # Return cached data if less than 1 hour old
+    if time.time() - _headlines_cache["timestamp"] < 3600 and _headlines_cache["data"]:
+        return safe_json({"headlines": _headlines_cache["data"], "cached": True})
+
+    api_key = os.getenv("NEWSAPI_KEY", "")
+    if not api_key:
+        return safe_json({"headlines": [], "error": "NewsAPI key not configured"})
+
+    try:
+        import httpx
+        from datetime import date
+        today = date.today().isoformat()
+        params = {
+            "q"        : "stock market OR VIX OR Federal Reserve OR inflation OR S&P 500",
+            "language" : "en",
+            "sortBy"   : "publishedAt",
+            "pageSize" : 6,
+            "from"     : today,
+            "apiKey"   : api_key,
+        }
+        resp = httpx.get("https://newsapi.org/v2/everything", params=params, timeout=10)
+        articles = resp.json().get("articles", [])
+        headlines = [
+            {
+                "title"      : a["title"],
+                "source"     : a["source"]["name"],
+                "url"        : a["url"],
+                "publishedAt": a["publishedAt"],
+            }
+            for a in articles
+            if a.get("title") and a["title"] != "[Removed]"
+        ][:6]
+        _headlines_cache = {"data": headlines, "timestamp": time.time()}
+        return safe_json({"headlines": headlines, "cached": False})
+    except Exception as exc:
+        traceback.print_exc()
+        return safe_json({"headlines": [], "error": str(exc)})
 
 @app.get("/backtest", tags=["backtest"])
 def backtest():

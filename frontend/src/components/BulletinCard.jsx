@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import RegimeBadge from './RegimeBadge'
 import { useTheme } from '../ThemeContext'
+import { fetchHeadlines } from '../api'
 import { fmt } from '../utils'
 
 const TILES = [
@@ -68,11 +69,20 @@ function parseBulletin(raw) {
 }
 
 export default function BulletinCard({ data, loading, error, onRetry }) {
-  const [copied, setCopied] = useState(false)
+  const [copied,    setCopied]    = useState(false)
+  const [headlines, setHeadlines] = useState([])
+  const [headlinesLoading, setHeadlinesLoading] = useState(true)
   const isDark   = useTheme()
   const isLight  = !isDark
   const isMobile = window.innerWidth <= 768
   const sections = parseBulletin(data?.bulletin)
+
+  useEffect(() => {
+    fetchHeadlines()
+      .then(res => setHeadlines(res.data?.headlines || []))
+      .catch(() => setHeadlines([]))
+      .finally(() => setHeadlinesLoading(false))
+  }, [])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(data?.bulletin || '').then(() => {
@@ -198,9 +208,43 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
         )
       })}
 
+      {/* Today's Headlines */}
+      {(headlinesLoading || headlines.length > 0) && (
+        <div style={{ padding: isMobile ? '14px 16px' : '18px 28px', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, background: isLight ? 'rgba(99,102,241,0.03)' : 'rgba(99,102,241,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: isLight ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.15)', border: `1px solid ${isLight ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.3)'}`, color: isLight ? '#4f46e5' : '#a5b4fc' }}>📰</div>
+            <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', color: isLight ? '#4f46e5' : '#a5b4fc' }}>Today's Headlines</div>
+          </div>
+          {headlinesLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 16, borderRadius: 4 }} />)}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {headlines.map((h, i) => (
+                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textDecoration: 'none', padding: '8px 10px', borderRadius: 8, background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`, transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = isLight ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'}
+                >
+                  <span style={{ fontSize: 11, color: isLight ? '#4f46e5' : '#a5b4fc', fontFamily: 'JetBrains Mono, monospace', flexShrink: 0, marginTop: 1 }}>{String(i+1).padStart(2,'0')}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>{h.title}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3, fontFamily: 'JetBrains Mono, monospace' }}>{h.source} · {new Date(h.publishedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
+                  <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>→</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ padding: '10px 28px', fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)'}`, background: isLight ? '#f9f9ff' : 'rgba(0,0,0,0.2)' }}>
         Generated {data.generated_at ? new Date(data.generated_at).toLocaleTimeString() : '—'} · Automated quantitative system
       </div>
     </div>
   )
+
 }
+
+
