@@ -157,6 +157,8 @@ const res = await fetchAsk(q, context)
           padding: 5px 5px 5px 14px;
           box-sizing: border-box;
           width: 100%;
+          max-width: 100%;
+          overflow: hidden;
         }
         .ask-textarea {
           flex: 1;
