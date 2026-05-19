@@ -661,12 +661,11 @@ def get_headlines():
         from datetime import date
         today = date.today().isoformat()
         params = {
-            "q"        : "stock market OR VIX OR Federal Reserve OR inflation OR S&P 500",
-            "language" : "en",
-            "sortBy"   : "publishedAt",
-            "pageSize" : 6,
-            "from"     : today,
-            "apiKey"   : api_key,
+          "q"        : "stock market OR VIX OR Federal Reserve OR inflation OR S&P 500",
+          "language" : "en",
+          "sortBy"   : "publishedAt",
+          "pageSize" : 6,
+          "apiKey"   : api_key,
         }
         resp = httpx.get("https://newsapi.org/v2/everything", params=params, timeout=10)
         articles = resp.json().get("articles", [])
