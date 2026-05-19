@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { fetchAsk } from '../api'
+import { fetchAsk, fetchHeadlines } from '../api'
 import PageHeader from '../components/PageHeader'
 import useIsMobile from '../useIsMobile'
 import { REGIME_COLOR, REGIME_TEXT } from '../utils'
+
 
 const SUGGESTIONS_MOBILE = [
   { icon: '📊', text: 'What is driving volatility?' },
@@ -97,6 +98,7 @@ export default function AskPage({ bulletinData, latest }) {
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
+  const [headlines, setHeadlines] = useState([])
   const bottomRef               = useRef(null)
 
   const regime = latest?.data?.regime || bulletinData?.regime || 'ELEVATED'
@@ -117,6 +119,13 @@ useEffect(() => {
   } catch {}
 }, [messages])
 
+
+useEffect(() => {                                  
+  fetchHeadlines()
+    .then(res => setHeadlines(res.data?.headlines || []))
+    .catch(() => setHeadlines([]))
+}, [])                                             
+
 const clearHistory = () => {
   setMessages([])
   localStorage.removeItem(STORAGE_KEY)
@@ -129,10 +138,14 @@ const clearHistory = () => {
     setMessages(m => [...m, { role: 'user', text: q }])
     setLoading(true)
     try {
-      const context = bulletinData?.bulletin || 
+      const headlinesContext = headlines?.length > 0
+  ? `\n\nTODAY'S HEADLINES:\n${headlines.map((h, i) => `${i+1}. ${h.title} (${h.source})`).join('\n')}`
+  : ''
+
+const context = (bulletinData?.bulletin || 
   `Current market data: VIX ${latest?.data?.vix || 'unavailable'}, 
    Regime: ${latest?.data?.regime || 'unavailable'}, 
-   Date: ${latest?.data?.date || new Date().toISOString().split('T')[0]}`
+   Date: ${latest?.data?.date || new Date().toISOString().split('T')[0]}`) + headlinesContext
 
 const res = await fetchAsk(q, context)
       setMessages(m => [...m, { role: 'ai', text: res.data.answer }])
