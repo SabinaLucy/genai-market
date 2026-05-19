@@ -1,4 +1,12 @@
-<div align="center">
+---
+title: Volarix
+emoji: 📈
+colorFrom: purple
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
 
 # Volarix
 ### GenAI Financial Market Stress Intelligence System
