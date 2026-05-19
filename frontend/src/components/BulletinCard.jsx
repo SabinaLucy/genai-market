@@ -187,22 +187,16 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
         })}
       </div>
 
-      {/* Full-width rows */}
-      {FULL_ROWS.map(tile => {
+     {/* Uncertainty */}
+      {FULL_ROWS.slice(0,1).map(tile => {
         if (!sections[tile.key]) return null
         const c = isLight ? tile.light : tile.dark
         return (
           <div key={tile.key} style={{ padding: isMobile ? '14px 18px' : '18px 28px', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', gap: 14, background: c.rowBg }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>
-              {tile.icon}
-            </div>
+            <div style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>{tile.icon}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', marginBottom: 8, color: c.color }}>
-                {tile.label}
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.75 }}>
-                {styledText(sections[tile.key], isLight)}
-              </p>
+              <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', marginBottom: 8, color: c.color }}>{tile.label}</div>
+              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.75 }}>{styledText(sections[tile.key], isLight)}</p>
             </div>
           </div>
         )
@@ -210,41 +204,88 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
 
       {/* Today's Headlines */}
       {(headlinesLoading || headlines.length > 0) && (
-        <div style={{ padding: isMobile ? '14px 16px' : '18px 28px', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, background: isLight ? 'rgba(99,102,241,0.03)' : 'rgba(99,102,241,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: isLight ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.15)', border: `1px solid ${isLight ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.3)'}`, color: isLight ? '#4f46e5' : '#a5b4fc' }}>📰</div>
-            <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', color: isLight ? '#4f46e5' : '#a5b4fc' }}>Today's Headlines</div>
+        <div style={{
+          borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
+          overflow: 'hidden',
+        }}>
+          {/* Animated top bar */}
+          <div style={{ height: 3, background: 'linear-gradient(90deg,#7c3aed,#06b6d4,#7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 3s linear infinite' }} />
+          <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}} @keyframes livepulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: isMobile ? '14px 16px 10px' : '16px 28px 12px', borderBottom: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'}`, background: isLight ? 'rgba(99,102,241,0.03)' : 'rgba(99,102,241,0.04)' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isLight ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.15)', border: `1px solid ${isLight ? 'rgba(139,92,246,0.25)' : 'rgba(139,92,246,0.3)'}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 16 }}>📰</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace', color: isLight ? '#6d28d9' : '#a78bfa' }}>TODAY'S HEADLINES</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', marginTop: 1 }}>Live financial news · {headlines.length} stories</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 20, padding: '4px 10px', flexShrink: 0 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', animation: 'livepulse 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#22c55e', fontWeight: 600 }}>LIVE</span>
+            </div>
           </div>
+
+          {/* Items */}
           {headlinesLoading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 16, borderRadius: 4 }} />)}
+            <div style={{ padding: isMobile ? '12px 16px' : '12px 28px', display: 'flex', flexDirection: 'column', gap: 10, background: isLight ? 'rgba(99,102,241,0.02)' : 'rgba(99,102,241,0.03)' }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 48, borderRadius: 8 }} />)}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ background: isLight ? 'rgba(99,102,241,0.02)' : 'rgba(99,102,241,0.03)' }}>
               {headlines.map((h, i) => (
-                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textDecoration: 'none', padding: '8px 10px', borderRadius: 8, background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`, transition: 'background 0.15s' }}
+                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  padding: isMobile ? '12px 16px' : '13px 28px',
+                  borderBottom: i < headlines.length - 1 ? `1px solid ${isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'}` : 'none',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s',
+                  cursor: 'pointer',
+                }}
                   onMouseEnter={e => e.currentTarget.style.background = isLight ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <span style={{ fontSize: 11, color: isLight ? '#4f46e5' : '#a5b4fc', fontFamily: 'JetBrains Mono, monospace', flexShrink: 0, marginTop: 1 }}>{String(i+1).padStart(2,'0')}</span>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600, color: isLight ? 'rgba(109,40,217,0.5)' : 'rgba(167,139,250,0.5)', flexShrink: 0, minWidth: 22, marginTop: 2 }}>{String(i+1).padStart(2,'0')}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>{h.title}</p>
-                    <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3, fontFamily: 'JetBrains Mono, monospace' }}>{h.source} · {new Date(h.publishedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.5, margin: '0 0 6px', fontWeight: 400 }}>{h.title}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 500, color: '#0891b2', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.22)', borderRadius: 4, padding: '2px 7px' }}>{h.source}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)' }}>·</span>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'var(--text-3)' }}>{new Date(h.publishedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>→</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-3)', flexShrink: 0, marginTop: 2, transition: 'all 0.15s' }}>↗</span>
                 </a>
               ))}
             </div>
           )}
+
+          {/* Footer */}
+          <div style={{ padding: isMobile ? '8px 16px' : '8px 28px', background: isLight ? 'rgba(99,102,241,0.03)' : 'rgba(0,0,0,0.2)', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'}` }}>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'var(--text-3)' }}>Refreshes hourly · click any headline to read full article</span>
+          </div>
         </div>
       )}
 
-      <div style={{ padding: '10px 28px', fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)'}`, background: isLight ? '#f9f9ff' : 'rgba(0,0,0,0.2)' }}>
+      {/* Disclaimer */}
+      {FULL_ROWS.slice(1).map(tile => {
+        if (!sections[tile.key]) return null
+        const c = isLight ? tile.light : tile.dark
+        return (
+          <div key={tile.key} style={{ padding: isMobile ? '14px 18px' : '18px 28px', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', gap: 14, background: c.rowBg }}>
+            <div style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>{tile.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', marginBottom: 8, color: c.color }}>{tile.label}</div>
+              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.75 }}>{styledText(sections[tile.key], isLight)}</p>
+            </div>
+          </div>
+        )
+      })}
+  
+  <div style={{ padding: '10px 28px', fontSize: 10, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)'}`, background: isLight ? '#f9f9ff' : 'rgba(0,0,0,0.2)' }}>
         Generated {data.generated_at ? new Date(data.generated_at).toLocaleTimeString() : '—'} · Automated quantitative system
       </div>
     </div>
   )
-
 }
-
-
