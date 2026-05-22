@@ -1,9 +1,79 @@
-import { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts'
 import PageHeader from '../components/PageHeader'
 import DonutChart from '../components/DonutChart'
 import useIsMobile from '../useIsMobile'
 import { fmt, REGIME_COLOR, REGIME_TEXT } from '../utils'
+
+/* Tooltip component */
+function InfoTip({ text, title }) {
+  const [open, setOpen] = useState(false)
+  const [pos,  setPos]  = useState({ top: 0, left: 0 })
+  const btnRef          = React.useRef(null)
+
+  const handleClick = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setPos({
+        top:  spaceBelow > 200 ? rect.bottom + 10 : rect.top - 220,
+        left: Math.max(12, Math.min(rect.left - 100, window.innerWidth - 280)),
+      })
+    }
+    setOpen(o => !o)
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={handleClick}
+        style={{
+          width: 18, height: 18, borderRadius: 6,
+          background: open ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.12)',
+          border: `1px solid ${open ? 'rgba(139,92,246,0.7)' : 'rgba(139,92,246,0.4)'}`,
+          color: '#a78bfa', fontSize: 10, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', flexShrink: 0, lineHeight: 1,
+          padding: 0, marginLeft: 6,
+          boxShadow: open ? '0 0 10px rgba(139,92,246,0.4)' : 'none',
+          transition: 'all 0.2s',
+          fontFamily: 'var(--font-mono)',
+        }}
+      >i</button>
+
+      {open && ReactDOM.createPortal(
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
+          <div style={{
+            position: 'fixed',
+            top:  pos.top,
+            left: pos.left,
+            width: 260,
+            background: 'linear-gradient(135deg,#1c1c3a 0%,#12122a 100%)',
+            border: '1px solid rgba(139,92,246,0.45)',
+            borderRadius: 14,
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.9)',
+            zIndex: 9999,
+          }}>
+            <style>{`@keyframes tipIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}`}</style>
+            <div style={{ height: 3, background: 'linear-gradient(90deg,#7c3aed,#06b6d4)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#a78bfa', fontWeight: 700, flexShrink: 0 }}>i</div>
+              <div style={{ fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#a78bfa', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{title || 'What is this?'}</div>
+            </div>
+            <div style={{ padding: '10px 14px 14px', fontSize: 12, lineHeight: 1.7, color: '#c8c8f0' }}>{text}</div>
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  )
+}
+
+
 
 const HORIZONS = [1, 5, 10]
 const SPARK_G  = ['#22c55e','#22c55e','#22c55e','#22c55e','#4ade80','#4ade80','#4ade80','#4ade80']
@@ -22,12 +92,13 @@ function AreaTooltip({ active, payload, label }) {
   )
 }
 
-export default function OverviewPage({ latest, predict, horizon, setHorizon, lastUpdated }) {
+export default function OverviewPage({ latest, predict, horizon, setHorizon, lastUpdated, onRefresh }) {
   const isMobile = useIsMobile()
   const ld = latest.data
   const pd = predict.data
   const [tick, setTick] = useState(0)
   useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1000); return () => clearInterval(id) }, [])
+  const [refreshing, setRefreshing] = useState(false)
 
   const regime      = ld?.regime      || 'ELEVATED'
   const regimeColor = ld?.regime_color || '#f59e0b'
@@ -67,15 +138,37 @@ export default function OverviewPage({ latest, predict, horizon, setHorizon, las
   const crsPct    = Math.round((probs.CRISIS   || 0) * 100)
 
   const STAT_CARDS = [
-    { cls: 'sc-green',  lbl: 'Current VIX',   val: ld ? fmt(ld.vix) : '—',   sub: ld ? `${ld.date} · ${ld.data_source === 'live' ? '● live' : '⚠ fallback'}` : null, icon: '◈', sparks: [40,55,35,70,50,80,90,100], colors: SPARK_G, loading: latest.loading,  valColor: '#4ade80' },
-    { cls: 'sc-amber',  lbl: '5-Day Forecast', val: pd ? `${fmt(pd.predicted_vix)} ${pd.direction === 'up' ? '↑' : pd.direction === 'down' ? '↓' : '→'}` : '—', sub: pd ? `${horizon}d · 90% CI` : null, icon: '◎', sparks: [100,85,75,65,55,45,38,30], colors: SPARK_A, loading: predict.loading, valColor: '#fbbf24' },
-    { cls: 'sc-green',  lbl: 'Market Regime',  val: regime, sub: ld ? `Sentiment ${fmt(ld.sentiment, 4)}` : null, icon: '◉', sparks: [28,30,25,28,22,20,18,18], colors: SPARK_G, loading: latest.loading,  valColor: '#4ade80' },
-    { cls: 'sc-purple', lbl: 'CI Range',       val: pd ? `${fmt(pd.interval_lo)}–${fmt(pd.interval_hi)}` : '—', sub: '90% coverage', icon: '▤', sparks: [50,60,70,65,80,75,85,90], colors: SPARK_P, loading: predict.loading, valColor: '#c4b5fd' },
-  ]
+  { cls: 'sc-green',  lbl: 'Current VIX',   tip: 'VIX is the market\'s fear gauge. Under 20 means investors are calm. Above 30 means something scary is happening. Right now it is showing how stressed the market is at this exact moment.', val: ld ? fmt(ld.vix) : '—', sub: ld ? `${ld.date} · ${ld.data_source === 'live' ? '● live' : '⚠ fallback'}` : null, icon: '◈', sparks: [40,55,35,70,50,80,90,100], colors: SPARK_G, loading: latest.loading,  valColor: '#4ade80' },
+  { cls: 'sc-amber',  lbl: '5-Day Forecast', tip: 'This is where Volarix predicts the VIX will be in 5 trading days. The arrow shows whether it expects volatility to go up or down from where it is now.', val: pd ? `${fmt(pd.predicted_vix)} ${pd.direction === 'up' ? '↑' : pd.direction === 'down' ? '↓' : '→'}` : '—', sub: pd ? `${horizon}d · 90% CI` : null, icon: '◎', sparks: [100,85,75,65,55,45,38,30], colors: SPARK_A, loading: predict.loading, valColor: '#fbbf24' },
+  { cls: 'sc-green',  lbl: 'Market Regime',  tip: 'Volarix classifies the market into three states. STABLE means things are calm. WATCH means stress is building and you should pay attention. ALERT means the market is in crisis mode.', val: regime, sub: ld ? `Sentiment ${fmt(ld.sentiment, 4)}` : null, icon: '◉', sparks: [28,30,25,28,22,20,18,18], colors: SPARK_G, loading: latest.loading,  valColor: '#4ade80' },
+  { cls: 'sc-purple', lbl: 'CI Range',       tip: 'This is the range where the real VIX will most likely land. We are 90% confident the actual number will fall somewhere in here. A wider range means more uncertainty in the market right now.', val: pd ? `${fmt(pd.interval_lo)}–${fmt(pd.interval_hi)}` : '—', sub: '90% coverage', icon: '▤', sparks: [50,60,70,65,80,75,85,90], colors: SPARK_P, loading: predict.loading, valColor: '#c4b5fd' },
+]
 
   return (
-    <div className="fade-up">
-      <PageHeader title="Overview" subtitle="Live VIX · Forecast · 30-day trend" page="overview" lastUpdated={lastUpdated} regime={regime} regimeLabel={ld?.regime_label} />
+    <>
+      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+      <div className="fade-up">
+        <PageHeader title="Overview" subtitle="Live VIX · Forecast · 30-day trend" page="overview" lastUpdated={lastUpdated} regime={regime} regimeLabel={ld?.regime_label}>
+          <button
+            onClick={() => {
+              setRefreshing(true)
+              onRefresh?.()
+              setTimeout(() => setRefreshing(false), 2000)
+            }}
+            title="Refresh live data"
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: refreshing ? `${accentColor}15` : 'transparent',
+              border: `1px solid ${refreshing ? `${accentColor}60` : 'var(--border)'}`,
+              color: refreshing ? accentColor : 'var(--text-3)', fontSize: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.15s',
+              animation: refreshing ? 'spin 0.8s linear infinite' : 'none',
+            }}
+            onMouseEnter={e => { if (!refreshing) { e.currentTarget.style.borderColor = `${accentColor}60`; e.currentTarget.style.color = accentColor }}}
+            onMouseLeave={e => { if (!refreshing) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)' }}}
+          >↺</button>
+        </PageHeader>
 
       <div style={{ padding: `${isMobile ? 16 : 28}px ${px}px`, display: 'flex', flexDirection: 'column', gap }}>
 
@@ -88,7 +181,7 @@ export default function OverviewPage({ latest, predict, horizon, setHorizon, las
 
         {/* Stat cards — 2 col on mobile, 4 on desktop */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: isMobile ? 10 : 16 }}>
-          {STAT_CARDS.map(({ cls, lbl, val, sub, icon, sparks, colors, loading, valColor }) => (
+          {STAT_CARDS.map(({ cls, lbl, tip, val, sub, icon, sparks, colors, loading, valColor }) => (
             <div key={lbl} className={`stat-card ${cls}`}>
               {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -99,7 +192,15 @@ export default function OverviewPage({ latest, predict, horizon, setHorizon, las
               ) : (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>{lbl}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', color: 'var(--text-2)', ...(isMobile && { position: 'relative', zIndex: 10 }) }}>
+                      {lbl}
+                      {tip && <InfoTip text={tip} title={
+                        lbl === 'Current VIX'   ? 'What is VIX?' :
+                        lbl === '5-Day Forecast' ? 'What is Forecast?' :
+                        lbl === 'Market Regime'  ? 'What is Regime?' :
+                        lbl === 'CI Range'       ? 'What is CI Range?' : 'What is this?'
+                      } />}
+                    </div>
                     {!isMobile && <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-1)' }}>{icon}</div>}
                   </div>
                   <div style={{ fontSize: isMobile ? (cls === 'sc-purple' ? 13 : 22) : (cls === 'sc-purple' ? 16 : 28), fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 5, color: valColor }}>{val}</div>
@@ -225,12 +326,12 @@ export default function OverviewPage({ latest, predict, horizon, setHorizon, las
         {/* Forecast card */}
         {pd && (
           <div className="card" style={{ padding: isMobile ? 16 : '28px 32px', borderLeft: `3px solid ${accentColor}`, position: 'relative', overflow: 'hidden', maxWidth: isMobile ? '100%' : 600 }}>
-            <div style={{ position: 'absolute', top: -50, right: -50, width: 130, height: 130, borderRadius: '50%', background: accentColor, opacity: 0.04 }} />
+            <div style={{ position: 'absolute', top: -50, right: -50, width: 130, height: 130, borderRadius: '50%', background: accentColor, opacity: 0.04, pointerEvents: 'none' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>VIX Forecast</span>
               <div style={{ display: 'flex', gap: 6 }}>
                 {HORIZONS.map(h => (
-                  <button key={h} onClick={() => setHorizon(h)} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontFamily: 'var(--font-mono)', cursor: 'pointer', fontWeight: 600, border: '1px solid', transition: 'all 0.15s', background: horizon === h ? `${accentColor}22` : 'transparent', color: horizon === h ? accentText : 'var(--text-3)', borderColor: horizon === h ? `${accentColor}55` : 'var(--border)' }}>
+                  <button key={`horizon-top-${h}`} onClick={() => setHorizon(h) } style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontFamily: 'var(--font-mono)', cursor: 'pointer', fontWeight: 600, border: '1px solid', transition: 'all 0.15s', background: horizon === h ? `${accentColor}22` : 'transparent', color: horizon === h ? accentText : 'var(--text-3)', borderColor: horizon === h ? `${accentColor}55` : 'var(--border)' }}>
                     {h}d
                   </button>
                 ))}
@@ -269,5 +370,6 @@ export default function OverviewPage({ latest, predict, horizon, setHorizon, las
         )}
       </div>
     </div>
+    </>
   )
 }

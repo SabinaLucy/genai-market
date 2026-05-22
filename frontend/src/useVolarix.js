@@ -65,9 +65,15 @@ export default function useVolarix() {
     if (!latest.loading) setLastUpdated(new Date())
   }, [lastTick, latest.loading])
 
-  return {
-    latest, predict, analogues, shap, backtest, bulletin,
-    horizon, setHorizon,
-    lastUpdated, regimeAlert, setRegimeAlert,
-  }
+  const refresh = () => {
+  latest.reload()
+  predict.reload()
+  setLastTick(Date.now())
+}
+
+ return {
+  latest, predict, analogues, shap, backtest, bulletin,
+  horizon, setHorizon, refresh,
+  lastUpdated, regimeAlert, setRegimeAlert,
+ }
 }

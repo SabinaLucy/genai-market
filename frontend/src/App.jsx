@@ -22,10 +22,11 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(isMobile)
 
   const {
-    latest, predict, analogues, shap, backtest, bulletin,
-    horizon, setHorizon,
-    lastUpdated, regimeAlert, setRegimeAlert,
-  } = useVolarix()
+  latest, predict, analogues, shap, backtest, bulletin,
+  horizon, setHorizon, refresh,
+  lastUpdated, regimeAlert, setRegimeAlert,
+ } = useVolarix()
+
 
   const regime      = latest.data?.regime      || 'ELEVATED'
   const regimeColor = latest.data?.regime_color || REGIME_COLOR.ELEVATED
@@ -67,7 +68,7 @@ export default function App() {
   }, [latest.data?.vix, regime])
 
   const pages = {
-    overview: <OverviewPage latest={latest} predict={predict} horizon={horizon} setHorizon={setHorizon} lastUpdated={lastUpdated} />,
+    overview: <OverviewPage latest={latest} predict={predict} horizon={horizon} setHorizon={setHorizon} lastUpdated={lastUpdated} onRefresh={refresh} />,
     regime:   <RegimePage   latest={latest} analogues={analogues} shap={shap} />,
     bulletin: <BulletinPage bulletin={bulletin} latest={latest} />,
     ask:      <AskPage      bulletinData={bulletin.data} latest={latest} />,
