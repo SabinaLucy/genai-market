@@ -1,4 +1,4 @@
-import {useMemo} from 'react'
+import {useMemo,useEffect,useRef,useState} from 'react'
 import {Area,AreaChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis,ReferenceLine} from 'recharts'
 import InfoTooltip from '../InfoTooltip'
 
@@ -20,6 +20,9 @@ export default function VixTrendChart({data=[],liveVix,loading}){
   points[points.length-1].vix=base
   return points
  },[liveVix])
+ const chartRef=useRef(null)
+ const [ready,setReady]=useState(false)
+ useEffect(()=>{const node=chartRef.current;if(!node)return;const check=()=>setReady(node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);check();const observer=new ResizeObserver(check);observer.observe(node);return()=>observer.disconnect()},[])
  const real=data.length>=2
  const values=real?data:illustrative
  return <section className="vol-panel vol-trend vol-original-trend">
@@ -27,7 +30,7 @@ export default function VixTrendChart({data=[],liveVix,loading}){
    <div className="vol-vix-legend"><span><i className="vol-vix-line crisis"/>Crisis ≥30</span><span><i className="vol-vix-line elevated"/>Elevated ≥20</span>{liveVix!=null&&<span>Live VIX {Number(liveVix).toFixed(2)}</span>}</div>
   </div>
   {loading&&!values.length?<div className="vol-chart-empty">Loading VIX data…</div>:values.length<2?<div className="vol-chart-empty">VIX market data is currently unavailable.</div>:<>
-   <div className="vol-original-chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={values} margin={{top:10,right:10,bottom:0,left:-18}}>
+   <div className="vol-original-chart-wrap" ref={chartRef}>{ready&&<ResponsiveContainer width="100%" height="100%"><AreaChart data={values} margin={{top:10,right:10,bottom:0,left:-18}}>
     <defs><linearGradient id="vol-original-orange-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity=".25"/><stop offset="100%" stopColor="#f59e0b" stopOpacity=".02"/></linearGradient></defs>
     <CartesianGrid vertical={false} stroke="rgba(159,153,193,.14)"/>
     <XAxis dataKey="date" tickFormatter={tickDate} axisLine={false} tickLine={false} tick={{fill:'var(--vol-muted)',fontSize:10}} minTickGap={38}/>
@@ -36,7 +39,7 @@ export default function VixTrendChart({data=[],liveVix,loading}){
     <ReferenceLine y={20} stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity=".55"/>
     <ReferenceLine y={30} stroke="#ef4444" strokeDasharray="4 4" strokeOpacity=".55"/>
     <Area dataKey="vix" type="monotone" stroke="#f59e0b" strokeWidth={2.4} fill="url(#vol-original-orange-fill)" dot={false} activeDot={{r:5,stroke:'#fff',strokeWidth:2,fill:'#f59e0b'}} isAnimationActive={false}/>
-   </AreaChart></ResponsiveContainer></div>
+   </AreaChart></ResponsiveContainer>}</div>
    {!real&&<div className="vol-vix-disclaimer">Illustrative 30-day trend · Current VIX is live</div>}
   </>}
  </section>
