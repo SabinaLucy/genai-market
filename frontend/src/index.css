@@ -317,3 +317,13 @@ body {
   /* forecast and about max-widths */
   [style*="max-width"] { max-width: 100% !important; }
 }
+
+/* Shared Volarix navigation: isolated from existing page components */
+.vol-sidebar{background:linear-gradient(165deg,#1b1f30,#191d2e 52%,#292944)!important;border-right:1px solid rgba(207,191,255,.18)!important;box-shadow:4px 0 30px rgba(0,0,0,.2)!important;padding:0 12px}
+:root.light .vol-sidebar{background:linear-gradient(155deg,#fff,#f1eeff)!important}
+.vol-side-brand{padding:25px 14px 28px;border-bottom:1px solid var(--border)}
+.vol-logo{display:flex;align-items:center;gap:9px}.vol-logo strong{font-size:25px;letter-spacing:-.055em;color:var(--text-1);font-weight:780}.vol-logo small{display:block;font-size:10px;color:var(--text-2);margin-top:3px}
+.vol-side-nav{display:flex;flex-direction:column;gap:6px;padding-top:24px}.vol-side-nav button{border:1px solid transparent;background:transparent;border-radius:13px;color:var(--text-2);display:flex;align-items:center;gap:14px;padding:13px 14px;text-align:left;font-size:13px;font-weight:600;cursor:pointer}.vol-side-nav button span{font-size:21px;font-weight:400;width:25px;text-align:center}.vol-side-nav button.active{background:linear-gradient(120deg,rgba(163,141,255,.48),rgba(105,72,181,.35));color:var(--text-1);border-color:rgba(184,157,255,.55);box-shadow:0 0 15px rgba(144,104,255,.18)}
+.vol-side-bottom{margin-top:auto;padding:15px 6px 22px}.vol-side-promo{border:1px solid rgba(184,155,255,.35);border-radius:17px;padding:20px 16px;height:170px;position:relative;overflow:hidden;background:linear-gradient(140deg,rgba(155,128,245,.24),rgba(155,128,245,.06))}.vol-side-promo h3{font-size:19px;line-height:1.12;letter-spacing:-.04em}.vol-side-promo p{font-size:12px;margin-top:10px;color:var(--text-2)}.vol-promo-wave{position:absolute;bottom:-65px;right:-5px;font-size:190px;color:#b48bff;opacity:.25;line-height:1}
+.vol-side-theme{display:flex;justify-content:center;gap:8px;margin-top:20px;background:rgba(130,122,182,.16);border-radius:30px;padding:5px}.vol-side-theme button{flex:1;border:1px solid transparent;background:transparent;border-radius:25px;color:var(--text-2);font-size:19px;padding:5px;cursor:pointer}.vol-side-theme button.active{background:linear-gradient(135deg,#b7a0ff,#7453d8);color:white;border-color:rgba(255,255,255,.3);box-shadow:0 0 12px rgba(160,118,255,.45)}
+@media(max-width:768px){.vol-sidebar{display:none!important}}
