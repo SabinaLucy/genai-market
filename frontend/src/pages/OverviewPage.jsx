@@ -1,5 +1,4 @@
 import {useEffect,useMemo,useState} from 'react'
-import {fetchHeadlines} from '../api'
 import MarketStatCard from '../components/overview/MarketStatCard'
 import VixTrendChart from '../components/overview/VixTrendChart'
 import MarketNews from '../components/overview/MarketNews'
@@ -11,12 +10,12 @@ const format=v=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toFixed(2)
 const trend=(values,color='#c29bff')=>{const a=values||[];if(a.length<2)return null;const low=Math.min(...a),high=Math.max(...a),range=high-low||1;const p=a.map((v,i)=>[i*200/(a.length-1),65-(v-low)/range*52]);const d=p.map(([x,y],i)=>(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)).join(' ');return <svg viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="vol-spark-fill" x1="0" y1="0" x2="0" y2="1"><stop stopColor={color} stopOpacity=".45"/><stop offset="1" stopColor={color} stopOpacity="0"/></linearGradient></defs><path d={d+' L200 70 L0 70Z'} fill="url(#vol-spark-fill)"/><path d={d} stroke={color} fill="none" strokeWidth="2.3" strokeLinecap="round"/><circle cx={p[p.length-1][0]} cy={p[p.length-1][1]} r="3" fill="#fff"/></svg>}
 function Probability({low,elevated,crisis}){const vals=[{label:'Stable',val:low,color:'#41dda0'},{label:'Elevated',val:elevated,color:'#bd88ff'},{label:'Crisis',val:crisis,color:'#ff718b'}];const total=vals.reduce((a,b)=>a+b.val,0)||100;let offset=0;const radius=52,circ=2*Math.PI*radius;const dominant=vals.reduce((a,b)=>b.val>a.val?b:a,vals[0]);return <section className="vol-panel vol-prob"><h2>Regime Probability <InfoTooltip title="Regime Probability" text="Model-estimated likelihood of the market being stable, elevated or in crisis. The values come from the forecast model."/></h2><div className="vol-prob-content"><div className="vol-prob-donut"><svg viewBox="0 0 140 140" aria-label="Regime probability chart"><circle cx="70" cy="70" r={radius} stroke="rgba(160,148,206,.18)" strokeWidth="17" fill="none"/>{vals.map(x=>{const len=circ*x.val/total;const el=<circle key={x.label} cx="70" cy="70" r={radius} stroke={x.color} strokeWidth="17" fill="none" strokeDasharray={len+' '+(circ-len)} strokeDashoffset={-offset} strokeLinecap="round"/>;offset+=len;return el})}</svg><div className="vol-prob-center"><strong>{dominant.val}%</strong><small>{dominant.label}</small></div></div><div className="vol-prob-legend">{vals.map(x=><div key={x.label}><i className="vol-dot" style={{background:x.color}}/>{x.label}<b style={{color:x.color}}>{x.val}%</b></div>)}</div></div></section>}
 export default function OverviewPage({latest,predict,horizon,setHorizon,lastUpdated,onRefresh}){
- const ld=latest.data,pd=predict.data,[seconds,setSeconds]=useState(0),[range,setRange]=useState('30D'),[history,setHistory]=useState([]),[refreshing,setRefreshing]=useState(false)
+ const ld=latest.data,pd=predict.data,[seconds,setSeconds]=useState(0),[range,setRange]=useState('30D'),[history]=useState([]),[refreshing,setRefreshing]=useState(false)
  useEffect(()=>{const t=setInterval(()=>setSeconds(Math.floor((Date.now()-(lastUpdated?new Date(lastUpdated).getTime():Date.now()))/1000)),1000);return()=>clearInterval(t)},[lastUpdated])
  const vix=ld?.vix,forecast=pd?.predicted_vix,regime=ld?.regime
  const probs=pd?.regime_probabilities||{},low=Math.round((Number(probs.LOW)||0)*100),elevated=Math.round((Number(probs.ELEVATED)||0)*100),crisis=Math.round((Number(probs.CRISIS)||0)*100)
  const data=useMemo(()=>history.filter(x=>x?.date&&Number.isFinite(Number(x?.vix))).map(x=>({date:x.date,vix:Number(x.vix)})),[history])
- const onRefreshClick=async()=>{setRefreshing(true);try{await onRefresh?.()}finally{setTimeout(()=>setRefreshing(false),700)}}
+ const onRefreshClick=()=>{setRefreshing(true);onRefresh?.();setTimeout(()=>setRefreshing(false),1000)}
  const direction=forecast!=null&&vix!=null?(forecast>=vix?'↑':'↓'):''
  const diff=forecast!=null&&vix?((forecast-vix)/vix*100).toFixed(1):null
  const isLive=ld?.data_source==='live'&&!latest.error
