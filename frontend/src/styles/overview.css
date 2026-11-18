@@ -35,3 +35,19 @@
 .vol-story-photo-fallback:before{content:"";position:absolute;width:65%;height:125%;right:-18%;top:-28%;border:1px solid rgba(205,175,255,.28);border-radius:50%;transform:rotate(-28deg);box-shadow:-32px 12px 65px rgba(153,107,246,.2)}
 .vol-original-trend,.vol-original-chart-wrap{min-width:0}
 .vol-original-chart-wrap{min-height:152px;position:relative}
+
+/* Apple-inspired typography, scoped to Overview only. Preserve all layout and chart styling. */
+.vol-shell{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-optical-sizing:auto;
+  text-rendering:optimizeLegibility;
+}
+.vol-shell p,.vol-shell small,.vol-shell button,.vol-shell .vol-stat-label,.vol-shell .vol-stat-sub,.vol-shell .vol-prob-legend,.vol-shell .vol-vix-legend{
+  letter-spacing:-.012em;
+}
+.vol-shell p{line-height:1.55}
+.vol-shell h1,.vol-shell h2,.vol-shell h3{letter-spacing:-.032em}
+.vol-shell button{font-family:inherit}
+.vol-shell .vol-stat-value,.vol-shell .vol-forecast-big strong,.vol-shell .vol-forecast-mini strong,.vol-shell .vol-prob-center strong{font-variant-numeric:tabular-nums}
