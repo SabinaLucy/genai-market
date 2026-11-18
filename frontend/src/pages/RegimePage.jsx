@@ -42,19 +42,19 @@ function InfoTip({ text, title }) {
   )
 }
 
-const FEATURE_NAMES = {
-  vix_lag1:        "Yesterday's VIX Level",
-  vix_lag5:        '5-Day Lagged VIX',
-  vix_lag21:       '21-Day Lagged VIX',
-  vix_roll_mean5:  '5-Day Rolling VIX Average',
-  vix_roll_std21:  '21-Day Volatility Spread',
-  fedfunds:        'Federal Funds Rate',
-  cpi:             'Inflation Rate (CPI)',
-  unrate:          'Unemployment Rate',
-  gs10:            '10-Year Treasury Yield',
-  indpro:          'Industrial Production Index',
-  m2sl:            'Money Supply (M2)',
-  sentiment:       'News Sentiment Score',
+const FEATURE_INFO = {
+  vix_lag1: { label: "Previous Day's Volatility", description: "The VIX level from the previous trading day." },
+  vix_lag5: { label: "Volatility 5 Days Ago", description: "The VIX level five trading days earlier." },
+  vix_lag21: { label: "Volatility 21 Days Ago", description: "The VIX level 21 trading days earlier." },
+  vix_roll_mean5: { label: "Average Volatility (5 Days)", description: "The average VIX level over the last five trading days." },
+  vix_roll_std21: { label: "Volatility Variation (21 Days)", description: "How much VIX readings varied over the last 21 trading days." },
+  fedfunds: { label: "Federal Reserve Interest Rate", description: "The federal funds rate, a key benchmark for short-term interest rates." },
+  cpi: { label: "Inflation Rate (CPI)", description: "Consumer price changes measured by the Consumer Price Index." },
+  unrate: { label: "Unemployment Rate", description: "The share of the labor force currently unemployed." },
+  gs10: { label: "Long-Term Interest Rates", description: "The yield on 10-year U.S. Treasury securities." },
+  indpro: { label: "Industrial Production", description: "An index tracking output from factories, mines, and utilities." },
+  m2sl: { label: "Money Supply", description: "A broad measure of money available in the economy." },
+  sentiment: { label: "Market News Sentiment", description: "The model's measure of positive or negative financial news." },
 }
 
 const RC = [
@@ -87,9 +87,11 @@ export default function RegimePage({latest,analogues,shap}) {
    {[{name:'STABLE',subtitle:'Low market stress',range:'VIX below 20',icon:'◇',tone:'stable',key:'LOW'},{name:'ELEVATED',subtitle:'Moderate market stress',range:'VIX 20–30',icon:'◈',tone:'elevated',key:'ELEVATED'},{name:'CRISIS',subtitle:'High market stress',range:'VIX above 30',icon:'⚡',tone:'crisis',key:'CRISIS'}].map(x=><div className={'vr-regime-card vr-glass '+x.tone+(regime===x.key?' selected':'')} key={x.name}><div className="vr-regime-icon">{x.icon}</div><div className="vr-regime-title">{x.name}</div><div className="vr-regime-sub">{x.subtitle}</div><div className="vr-regime-range">{x.range}</div>{regime===x.key&&<span className="vr-current">● Current regime</span>}</div>)}
    </section>
    <div className="vr-bottom-grid">
-    <section className="vr-panel vr-glass"><div className="vr-panel-heading"><div><h2>What Drives Market Stress? <InfoTip title="What is SHAP?" text="SHAP estimates how individual features contribute to the model output. Positive contributions push the forecast upward; negative contributions push it downward. Bar lengths show relative magnitude."/></h2><p>Explainable AI · SHAP feature contributions</p></div><span className="vr-panel-icon">✧</span></div>
-     {shap.loading?<p className="vr-empty">Loading model explanations…</p>:shap.error?<p className="vr-empty">{shap.error}</p>:drivers.length===0?<p className="vr-empty">No model-driver data available.</p>:<div className="vr-driver-list">{drivers.slice(0,6).map((d,i)=>{const raw=Number(d.shap_value??d.importance??0),pos=raw>=0;return <div className="vr-driver" key={d.feature||i}><div className="vr-driver-row"><span>{FEATURE_NAMES[d.feature]||d.feature||'Feature '+(i+1)}</span><span className={pos?'up':'down'}>{pos?'↑':'↓'} {fmt(Math.abs(raw),4)}</span></div><div className="vr-track"><div className={pos?'up':'down'} style={{width:Math.min(100,Math.abs(raw)/maxVal*100)+'%'}}/></div></div>})}</div>}
-     {shap.data?.stability_rho!=null&&<div className="vr-stability">Model stability score <strong>{fmt(shap.data.stability_rho,3)}</strong></div>}
+    <section className="vr-panel vr-glass vr-drivers-panel">
+      <div className="vr-panel-heading"><div><h2>What Drives Market Stress? <InfoTip title="How to read these factors" text="These bars show which inputs most influence the model's prediction. Longer bars mean a larger contribution. An up arrow increases the model output; a down arrow decreases it. This explains the model, not direct cause and effect in markets."/></h2><p>The key factors influencing today's market volatility</p></div><span className="vr-panel-icon">✧</span></div>
+      <div className="vr-ai-explainer"><span className="vr-ai-explainer-icon">✧</span><div><strong>AI Market Analysis</strong><p>These factors have the strongest influence on the model's market stress assessment.</p></div></div>
+      {shap.loading?<p className="vr-empty">Loading model explanations…</p>:shap.error?<p className="vr-empty">{shap.error}</p>:drivers.length===0?<p className="vr-empty">No model-driver data available.</p>:<div className="vr-driver-list">{drivers.slice(0,6).map((d,i)=>{const raw=Number(d.shap_value??d.importance??0),pos=raw>=0,info=FEATURE_INFO[d.feature];return <div className="vr-driver" key={d.feature||i}><div className="vr-driver-row"><div className="vr-driver-label"><span>{info?.label||d.feature||'Feature '+(i+1)}</span><small>{info?.description||'A model input influencing the prediction.'}</small></div><div className="vr-driver-value"><span className={pos?'up':'down'}>{pos?'↑':'↓'} {fmt(Math.abs(raw),4)}</span><small>Influence</small></div></div><div className="vr-track"><div className={pos?'up':'down'} style={{width:Math.min(100,Math.abs(raw)/maxVal*100)+'%'}}/></div></div>})}</div>}
+      {shap.data?.stability_rho!=null&&<div className="vr-stability"><span>◇ &nbsp; Model Stability <InfoTip title="Model Stability" text="A model diagnostic indicating how consistently the model's feature rankings behave. It does not guarantee that forecasts are accurate."/></span><strong>{fmt(shap.data.stability_rho,3)}</strong></div>}
     </section>
     <section className="vr-panel vr-glass"><div className="vr-panel-heading"><div><h2>Historical Market Analogues <InfoTip title="What are Analogues?" text="Volarix identifies historical market periods resembling current conditions. Similarity scores describe resemblance, not a guarantee of future market behavior."/></h2><p>Explore similar conditions from the past</p></div><span className="vr-panel-icon">◷</span></div>
      {analogues.loading?<p className="vr-empty">Finding historical matches…</p>:analogues.error?<p className="vr-empty">{analogues.error}</p>:match.length===0?<p className="vr-empty">No historical matches available.</p>:<div className="vr-analogue-list">{match.map((a,i)=><div className="vr-analogue" key={a.date||i}><div className="vr-analogue-top"><strong>{a.date||'Historical period '+(i+1)}</strong><RegimeBadge regime={a.regime} regimeLabel={a.regime_label} size="sm"/></div><div className="vr-analogue-meta">{a.vix!=null&&<span>VIX then <strong>{fmt(a.vix)}</strong></span>}{a.similarity!=null&&<span>Similarity <strong>{(a.similarity*100).toFixed(1)}%</strong></span>}</div>{a.similarity!=null&&<div className="vr-track"><div className="match" style={{width:Math.max(0,Math.min(100,a.similarity*100))+'%'}}/></div>}</div>)}</div>}
