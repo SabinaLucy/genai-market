@@ -18,7 +18,7 @@ import AboutPage     from './pages/AboutPage'
 export default function App() {
   const isMobile = useIsMobile()
   const [page,   setPage]   = useState('overview')
-  const [isDark, setIsDark] = useState(true)
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('volarix-theme') !== 'light')
   const [showSplash, setShowSplash] = useState(isMobile)
 
   const {
@@ -39,6 +39,7 @@ export default function App() {
     } else {
       root.classList.add('light')
     }
+    localStorage.setItem('volarix-theme', isDark ? 'dark' : 'light')
   }, [isDark])
 
   /* Scroll to top on page change */
