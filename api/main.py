@@ -643,6 +643,30 @@ def ask(request: Request, body: AskRequest):
 # Headlines cache — refreshes every hour to protect NewsAPI free tier (100 req/day)
 _headlines_cache: dict = {"data": [], "timestamp": 0.0}
 
+# Read-only historical VIX series for interactive dashboard charts.
+# The same dataset is loaded for model inference at startup.
+@app.get("/vix/history", tags=["data"])
+def vix_history(range: str = "30D"):
+    periods = {"7D": 7, "30D": 30, "90D": 90, "1Y": 365}
+    days = periods.get(range.upper(), 30)
+    if state.master_df is None or "vix" not in state.master_df.columns:
+        raise HTTPException(503, "Historical VIX data unavailable")
+    df = state.master_df[["vix"]].dropna().sort_index()
+    if df.empty:
+        return safe_json({"range": range.upper(), "observations": [], "source": "master_df"})
+    cutoff = df.index[-1] - pd.Timedelta(days=days)
+    subset = df.loc[df.index >= cutoff]
+    return safe_json({
+        "range": range.upper(),
+        "observations": [
+            {"date": str(idx.date()), "vix": round(float(val), 2)}
+            for idx, val in subset["vix"].items()
+        ],
+        "source": "master_df",
+        "last_observation": str(df.index[-1].date()),
+    })
+
+
 @app.get("/headlines", tags=["data"])
 def get_headlines():
     """Fetch today's top financial headlines from NewsAPI with 1-hour cache."""
@@ -675,6 +699,8 @@ def get_headlines():
                 "source"     : a["source"]["name"],
                 "url"        : a["url"],
                 "publishedAt": a["publishedAt"],
+                "image_url"  : a.get("urlToImage"),
+                "description": a.get("description"),
             }
             for a in articles
             if a.get("title") and a["title"] != "[Removed]"
