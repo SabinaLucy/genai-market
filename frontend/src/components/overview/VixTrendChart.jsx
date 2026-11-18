@@ -22,7 +22,7 @@ export default function VixTrendChart({data=[],liveVix,loading}){
  },[liveVix])
  const chartRef=useRef(null)
  const [ready,setReady]=useState(false)
- useEffect(()=>{const node=chartRef.current;if(!node)return;const check=()=>setReady(node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);check();const observer=new ResizeObserver(check);observer.observe(node);return()=>observer.disconnect()},[])
+ useEffect(()=>{const node=chartRef.current;if(!node)return;const check=()=>setReady(node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);check();const observer=new ResizeObserver(check);observer.observe(node);return()=>observer.disconnect()},[loading,liveVix,data.length])
  const real=data.length>=2
  const values=real?data:illustrative
  return <section className="vol-panel vol-trend vol-original-trend">
