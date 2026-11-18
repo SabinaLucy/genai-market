@@ -1,0 +1,2 @@
+import InfoTooltip from '../InfoTooltip'
+export default function MarketStatCard({kind,label,title,tip,value,sub,children,loading}){return <article className={'vol-panel vol-stat vol-stat-'+kind}><div className="vol-stat-label">{label}<InfoTooltip title={title||label} text={tip}/></div>{loading?<div className="vol-stat-loading">Loading…</div>:<><div className="vol-stat-value">{value}</div>{sub&&<div className="vol-stat-sub">{sub}</div>}</>}{children}</article>}
