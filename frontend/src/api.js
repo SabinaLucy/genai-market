@@ -13,3 +13,5 @@ export const fetchBulletin = ()           => api.get('/bulletin')
 export const fetchHeadlines= ()           => api.get('/headlines')
 export const fetchAsk      = (question, bulletin_context) =>
   api.post('/ask', { question, bulletin_context })
+
+export const fetchVixHistory = (range = '30D') => api.get('/vix/history', { params: { range } })
