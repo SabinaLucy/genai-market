@@ -4,6 +4,7 @@ import MarketStatCard from '../components/overview/MarketStatCard'
 import VixTrendChart from '../components/overview/VixTrendChart'
 import MarketNews from '../components/overview/MarketNews'
 import MarketInsight from '../components/overview/MarketInsight'
+import ForecastExplorer from '../components/overview/ForecastExplorer'
 import InfoTooltip from '../components/InfoTooltip'
 import '../styles/volarix-theme.css'
 import '../styles/overview.css'
@@ -27,6 +28,6 @@ export default function OverviewPage({latest,predict,horizon,setHorizon,lastUpda
  <MarketStatCard kind="regime" label="Market Regime" title="What is Market Regime?" tip="Volarix classifies market volatility as LOW, ELEVATED or CRISIS, based on its market-stress analysis." value={regime||'—'} sub={ld?.sentiment!=null?'Sentiment: '+Number(ld.sentiment).toFixed(4):'Current market classification'} loading={latest.loading}><div className="vol-regime-bars">{Array.from({length:12},(_,i)=><i key={i} style={{height:(10+i*2.4)+'px',opacity:i>8?.5:1}}/>)}</div></MarketStatCard>
  <MarketStatCard kind="ci" label="CI Range (90%)" title="What is Confidence Interval?" tip="The forecast's 90% confidence interval represents the uncertainty around the predicted VIX. A wider interval means more uncertainty." value={pd?format(pd.interval_lo)+' – '+format(pd.interval_hi):'—'} sub="90% prediction interval" loading={predict.loading}><div className="vol-ci-bars">{Array.from({length:10},(_,i)=><i key={i} style={{height:(14+i*2.8)+'px'}}/>)}</div></MarketStatCard></div>
  <div className="vol-analytics"><VixTrendChart data={data} liveVix={vix} loading={latest.loading}/><Probability low={low} elevated={elevated} crisis={crisis}/></div>
- <MarketInsight vix={vix} predicted={forecast} horizon={horizon} regime={regime} probability={elevated}/><MarketNews/>
+ <ForecastExplorer latest={latest} predict={predict} horizon={horizon} setHorizon={setHorizon}/><MarketInsight vix={vix} predicted={forecast} horizon={horizon} regime={regime} probability={elevated}/><MarketNews/>
  </main>
 }
