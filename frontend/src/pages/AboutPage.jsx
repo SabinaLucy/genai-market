@@ -1,3 +1,5 @@
+import { useContext } from 'react'
+import { ThemeContext } from '../ThemeContext'
 import PageHeader from '../components/PageHeader'
 import useIsMobile from '../useIsMobile'
 
@@ -38,8 +40,9 @@ const methods = [
 ]
 export default function AboutPage() {
   const mobile = useIsMobile()
+  const isDark = useContext(ThemeContext)
   const section = { padding: mobile ? '30px 18px' : '42px 46px' }
-  return <div className="volarix-about" style={{ fontFamily:'var(--font-sans)', color:ink, background:'#faf8ff', minHeight:'100%' }}>
+  return <div className={`volarix-about ${isDark ? "va-dark" : ""}`} style={{ fontFamily:'var(--font-sans)', color:ink, background:'#faf8ff', minHeight:'100%' }}>
     <style>{`
       .volarix-about * { box-sizing:border-box }
       .volarix-about .va-hero-v { animation:vaFloat 5s ease-in-out infinite;transform-box:fill-box;transform-origin:center }
@@ -49,6 +52,30 @@ export default function AboutPage() {
       .volarix-about .va-tile { transition:transform .25s ease,box-shadow .25s ease }
       .volarix-about .va-tile:hover { transform:translateY(-4px);box-shadow:0 12px 28px #9b72c922 }
       .volarix-about .va-reveal { animation:vaRise .8s both }
+
+      /* Dark appearance: scoped to About, without changing the approved light design. */
+      .volarix-about.va-dark { background:#0b0916!important; color:#f3ecff!important; }
+      .volarix-about.va-dark main > div { background:#151124!important; border-color:#403354!important; }
+      .volarix-about.va-dark main section { background:#151124!important; }
+      .volarix-about.va-dark main section:first-child { background:radial-gradient(ellipse at 75% 20%,#33204f,#171225 68%)!important; }
+      .volarix-about.va-dark main section:nth-child(3),
+      .volarix-about.va-dark main section:nth-child(4),
+      .volarix-about.va-dark main section:nth-child(5) { background:#201831!important; }
+      .volarix-about.va-dark main footer { background:#201831!important; }
+      .volarix-about.va-dark .va-tile { background:#261e39!important; border-color:#514064!important; color:#f4edff!important; }
+      .volarix-about.va-dark main section > div[style*="background"],
+      .volarix-about.va-dark main section > div > div[style*="background"] { border-color:#514064!important; }
+      .volarix-about.va-dark main section > div[style*="linear-gradient"] { background:linear-gradient(135deg,#2c2041,#1a1528)!important; }
+      .volarix-about.va-dark main section > div[style*="background: rgb(242"] { background:#241b37!important; }
+      .volarix-about.va-dark h1,.volarix-about.va-dark h2,.volarix-about.va-dark h3,
+      .volarix-about.va-dark strong { color:#f5efff!important; }
+      .volarix-about.va-dark p:not([style*="letter-spacing"]),
+      .volarix-about.va-dark main span:not(.va-beam),
+      .volarix-about.va-dark main div[style*="font-size: 11px"] { color:#c9bfd8!important; }
+      .volarix-about.va-dark p[style*="letter-spacing"] { color:#c5a2ff!important; }
+      .volarix-about.va-dark h1 span,.volarix-about.va-dark h2 span { color:#c19aff!important; }
+      .volarix-about.va-dark a { color:#c19aff!important; }
+      .volarix-about.va-dark .va-model { border-color:#514064!important; }
       @keyframes vaFloat { 50% { transform:translateY(-9px) } }
       @keyframes vaDraw { to { stroke-dashoffset:0 } }
       @keyframes vaFlow { to { background-position:-200% 0 } }
