@@ -1,3 +1,4 @@
+import VolarixLogo from '../components/VolarixLogo'
 import { useState, useRef, useEffect } from 'react'
 const Sparkles = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>✦</span>
 const MessageCircle = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>◉</span>
@@ -206,6 +207,12 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
         .ask-redesign .ask-attached-name{font-family:var(--font-sans);font-size:13px}
         .ask-redesign .ask-feature-card>span:last-child{font-size:14px;line-height:1.55}
 
+        .ask-attachment-integrated{padding:0!important;flex:0 0 auto;align-self:center}
+        .ask-attachment-integrated .ask-attach-button{height:36px;white-space:nowrap;font-size:13px!important}
+        .ask-attachment-integrated .ask-attached-name{max-width:170px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .ask-input-row{gap:10px!important;padding-left:10px!important;overflow:visible!important}
+        .ask-input-row .ask-textarea{min-width:80px}
+        .ask-send-btn{background:linear-gradient(135deg,#b99cff,#8155ed);box-shadow:0 3px 14px rgba(139,92,246,.2);border-color:rgba(167,139,250,.5)!important}
         .ask-style-control{position:relative;z-index:10}
         .ask-style-wrap,.ask-attach-wrap{position:relative}
         .ask-style-pill{display:flex;align-items:center;gap:8px;background:rgba(168,126,238,.13);border:1px solid rgba(170,133,240,.4);border-radius:999px;padding:9px 13px;color:var(--text-1);cursor:pointer;font:500 13px var(--font-sans)}
@@ -334,7 +341,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingTop: 16 }}>
                 <div style={{ width: 60, height: 60, borderRadius: 16, background: `${color}15`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ShieldIcon color={color} size={40} />
+                  <VolarixLogo collapsed />
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>What would you like to explore?</p>
@@ -346,7 +353,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, flexDirection: m.role === 'user' ? 'row-reverse' : 'row', marginBottom: 14, animation: 'msgIn 0.2s ease both' }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, marginTop: 2, background: m.role === 'user' ? 'rgba(99,102,241,0.15)' : `${color}15`, border: `1px solid ${m.role === 'user' ? 'rgba(99,102,241,0.3)' : `${color}40`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {m.role === 'user' ? <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <ShieldIcon color={color} size={18} />}
+                  {m.role === 'user' ? <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <VolarixLogo collapsed />}
                 </div>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-ai'} style={{ padding: '10px 13px', maxWidth: '85%', color: 'var(--text-1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>{m.text}</p>}
@@ -357,7 +364,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             {loading && (
               <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${color}15`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  <ShieldIcon color={color} size={18} />
+                  <VolarixLogo collapsed />
                 </div>
                 <div className="bubble-ai" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 5 }}>
                   {[0,1,2].map(i => <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: color, display: 'inline-block', animation: `bounce 1.2s ease-in-out ${i*0.2}s infinite` }} />)}
@@ -371,10 +378,11 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             <div ref={bottomRef} style={{ height: 4 }} />
           </div>
 
-          <div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
+          
           {/* Input — fixed at bottom, never moves */}
           <div className="ask-input-bar">
             <div className="ask-input-row" style={{ border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}` }}>
+              <div className="ask-attachment-controls ask-attachment-integrated"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name"><span aria-hidden="true">📎</span> {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
               <textarea
                 className="ask-textarea"
                 value={input}
@@ -385,7 +393,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                 className="ask-send-btn"
                 onClick={() => send(input)}
                 disabled={(!input.trim() && !attachment) || loading}
-                style={{ background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}` }}
+                style={{ background: (input.trim() || attachment) ? 'linear-gradient(135deg,#b99cff,#8155ed)' : 'rgba(167,139,250,.16)', color: (input.trim() || attachment) ? '#fff' : '#a78bfa', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}` }}
               >↑</button>
             </div>
           </div>
@@ -407,7 +415,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, paddingTop: 28 }}>
                 <div style={{ width: 76, height: 76, borderRadius: 20, background: `${color}15`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 28px ${color}20` }}>
-                  <ShieldIcon color={color} size={52} />
+                  <VolarixLogo collapsed />
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-1)', marginBottom: 5 }}>What would you like to explore?</p>
@@ -442,11 +450,12 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             <div ref={bottomRef} />
           </div>
 
-<div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
+
           <div style={{ padding: '12px 32px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-sidebar)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: 'var(--bg-card)', border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}`, borderRadius: 14, padding: '10px 10px 10px 16px' }}>
+              <div className="ask-attachment-controls ask-attachment-integrated"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name"><span aria-hidden="true">📎</span> {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
               <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about volatility, regime, risk…" style={{ flex: 1, minWidth: 0, outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 14, fontFamily: 'var(--font-sans)', border: 'none', resize: 'none', lineHeight: 1.5, height: 52, overflowY: 'auto', padding: 0 }} />
-              <button onClick={() => send(input)} disabled={(!input.trim() && !attachment) || loading} style={{ width: 36, height: 36, minWidth: 36, borderRadius: 10, background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}`, cursor: input.trim() ? 'pointer' : 'default', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>↑</button>
+              <button onClick={() => send(input)} disabled={(!input.trim() && !attachment) || loading} style={{ width: 36, height: 36, minWidth: 36, borderRadius: 10, background: (input.trim() || attachment) ? 'linear-gradient(135deg,#b99cff,#8155ed)' : 'rgba(167,139,250,.16)', color: (input.trim() || attachment) ? '#fff' : '#a78bfa', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}`, cursor: input.trim() ? 'pointer' : 'default', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>↑</button>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>Enter for new line · tap ↑ to send · 5 requests/hour</p>
           </div>
