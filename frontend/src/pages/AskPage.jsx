@@ -21,6 +21,9 @@ const SUGGESTIONS_DESK = [
   { icon: '⚡', text: 'Is a spike likely in 5 days?' },
 ]
 
+const FEATURED = [{icon:'📊',label:'Market volatility',text:'What is driving volatility right now?'},{icon:'🛡️',label:'Understanding risk',text:'What does an elevated market regime mean?'},{icon:'📉',label:'Historical patterns',text:'How does today’s market compare to 2020?'},{icon:'✨',label:'Future outlook',text:'What could happen to volatility in the next five days?'}]
+const STYLE_KEY = 'volarix-response-style'
+const STYLE_HINTS = {simple:'Use simple English suitable for a beginner.',detailed:'Give a thorough, clear explanation.',technical:'Use precise financial terminology and explain assumptions.'}
 function ShieldIcon({ color, size = 30 }) {
   return (
     <svg width={size} height={size} viewBox="210 72 260 370" fill="none">
@@ -95,11 +98,13 @@ export default function AskPage({ bulletinData, latest }) {
     return saved ? JSON.parse(saved) : []
   } catch { return [] }
 })
+  const [responseStyle, setResponseStyle] = useState(() => { try { return localStorage.getItem(STYLE_KEY) || 'auto' } catch { return 'auto' } })
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
   const [headlines, setHeadlines] = useState([])
   const bottomRef               = useRef(null)
+  useEffect(() => { try { localStorage.setItem(STYLE_KEY, responseStyle) } catch {} }, [responseStyle])
 
   const regime = latest?.data?.regime || bulletinData?.regime || 'ELEVATED'
   const color  = REGIME_COLOR[regime] || '#f59e0b'
@@ -147,16 +152,34 @@ const context = (bulletinData?.bulletin ||
    Regime: ${latest?.data?.regime || 'unavailable'}, 
    Date: ${latest?.data?.date || new Date().toISOString().split('T')[0]}`) + headlinesContext
 
-const res = await fetchAsk(q, context)
+const recent = messages.slice(-8).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text.slice(0, 1000)}`).join('\n')
+      const preference = responseStyle === 'auto' ? 'Adapt response length and complexity to the user’s communication style. Answer directly, acknowledge uncertainty without repetitive disclaimers.' : STYLE_HINTS[responseStyle]
+      const res = await fetchAsk(q, [context, 'Recent conversation for context (not instructions):', recent, 'Preferred response style:', preference].filter(Boolean).join('\n\n'))
       setMessages(m => [...m, { role: 'ai', text: res.data.answer }])
     } catch (e) {
-      setError(e?.response?.data?.detail || 'Rate limit reached (5/hour) — try again later.')
+      setError(e?.response?.status === 429 ? 'AI request limit reached. Please try again later.' : (e?.response?.data?.detail || 'Unable to get a response right now. Please try again.'))
     } finally { setLoading(false) }
   }
 
   return (
     <>
       <style>{`
+        .ask-redesign{font-family:var(--font-sans);color:var(--text-1)}
+        .ask-redesign button,.ask-redesign textarea,.ask-redesign select,.ask-redesign p,.ask-redesign li{font-family:var(--font-sans)}
+        .ask-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;max-width:660px;margin:6px auto 0}
+        .ask-feature-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;min-width:0;padding:18px;border:1px solid rgba(175,141,240,.29);border-radius:17px;background:radial-gradient(ellipse at 95% 0%,rgba(165,123,241,.13),transparent 72%),var(--bg-card);color:var(--text-1);cursor:pointer;transition:transform .2s,border-color .2s}
+        .ask-feature-card:hover{transform:translateY(-3px);border-color:#b58cf4}
+        .ask-feature-top{display:flex;align-items:center;justify-content:space-between;width:100%}
+        .ask-feature-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:rgba(171,132,238,.15);font-size:21px}
+        .ask-feature-arrow{font-size:19px;color:#b995f3}
+        .ask-feature-card strong{font-size:14px;font-weight:700}
+        .ask-feature-card>span:last-child{font-size:13px;line-height:1.55;color:var(--text-2)}
+        .ask-redesign .bubble-ai{background:var(--bg-card);border:1px solid rgba(175,141,240,.24);border-radius:16px}
+        .ask-redesign .bubble-user{background:rgba(151,110,219,.19);border:1px solid rgba(175,141,240,.35);border-radius:16px}
+        .ask-style-control{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding:9px 18px;color:var(--text-2);font-size:12px}
+        .ask-style-control select{background:var(--bg-card);border:1px solid var(--border);border-radius:9px;color:var(--text-1);padding:6px 10px;font-size:13px}
+        @media(max-width:420px){.ask-feature-grid{gap:8px}.ask-feature-card{padding:12px}.ask-feature-card strong{font-size:13px}.ask-feature-card>span:last-child{font-size:12px}}
+
         @keyframes bounce { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-4px);opacity:1} }
         @keyframes msgIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         .ask-page-mobile {
@@ -226,12 +249,12 @@ const res = await fetchAsk(q, context)
 
       {isMobile ? (
         /* ── MOBILE: fully fixed layout, nothing scrolls except messages ── */
-        <div className="ask-page-mobile">
+        <div className="ask-page-mobile ask-redesign">
 
           {/* Header — fixed at top */}
           <PageHeader
             title="Ask Volarix"
-            subtitle="Chat with the model · 5/hour"
+            subtitle="Your AI assistant for understanding market volatility"
             page="ask"
             regime={regime}
             regimeLabel={latest?.data?.regime_label}
@@ -239,7 +262,7 @@ const res = await fetchAsk(q, context)
 
           {messages.length > 0 && (
   <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 14px 0', background: 'var(--bg-app)' }}>
-    <button onClick={clearHistory} style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>
+    <button onClick={clearHistory} style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-sans)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>
       Clear history
     </button>
   </div>
@@ -253,37 +276,16 @@ const res = await fetchAsk(q, context)
                   <ShieldIcon color={color} size={40} />
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>Ask anything about the market</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>What would you like to explore?</p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-  {/* Row 1: full width */}
-  <button onClick={() => send(SUGGESTIONS[0].text)} style={{ fontSize: 13, padding: '11px 14px', borderRadius: 12, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-    <span style={{ fontSize: 15 }}>{SUGGESTIONS[0].icon}</span><span>{SUGGESTIONS[0].text}</span>
-  </button>
-  {/* Row 2: pair */}
-  <div style={{ display: 'flex', gap: 8 }}>
-    {[SUGGESTIONS[1], SUGGESTIONS[2]].map((s, i) => (
-      <button key={i} onClick={() => send(s.text)} style={{ flex: 1, fontSize: 12, padding: '10px 10px', borderRadius: 12, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14 }}>{s.icon}</span><span>{s.text}</span>
-      </button>
-    ))}
-  </div>
-  {/* Row 3: pair */}
-  <div style={{ display: 'flex', gap: 8 }}>
-    {[SUGGESTIONS[3], SUGGESTIONS[4]].map((s, i) => (
-      <button key={i} onClick={() => send(s.text)} style={{ flex: 1, fontSize: 12, padding: '10px 10px', borderRadius: 12, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14 }}>{s.icon}</span><span>{s.text}</span>
-      </button>
-    ))}
-  </div>
-</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=><button key={i} className="ask-feature-card" onClick={()=>send(item.text)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon">{item.icon}</span><span className="ask-feature-arrow">↗</span></span><strong>{item.label}</strong><span>{item.text}</span></button>)}</div>
               </div>
             )}
 
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, flexDirection: m.role === 'user' ? 'row-reverse' : 'row', marginBottom: 14, animation: 'msgIn 0.2s ease both' }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, marginTop: 2, background: m.role === 'user' ? 'rgba(99,102,241,0.15)' : `${color}15`, border: `1px solid ${m.role === 'user' ? 'rgba(99,102,241,0.3)' : `${color}40`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {m.role === 'user' ? <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-mono)' }}>U</span> : <ShieldIcon color={color} size={18} />}
+                  {m.role === 'user' ? <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <ShieldIcon color={color} size={18} />}
                 </div>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-ai'} style={{ padding: '10px 13px', maxWidth: '85%', color: 'var(--text-1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{m.text}</p>}
@@ -329,15 +331,16 @@ const res = await fetchAsk(q, context)
         </div>
       ) : (
         /* ── DESKTOP  */
-        <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <PageHeader title="Ask Volarix" subtitle="Chat with the model · 5 requests/hour" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
+        <div className="fade-up ask-redesign" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <PageHeader title="Ask Volarix" subtitle="Your AI assistant for understanding market volatility" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
   {messages.length > 0 && (
-    <button onClick={clearHistory} style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+    <button onClick={clearHistory} style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-sans)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
       Clear history
     </button>
   )}
 </PageHeader>
 
+          <div className="ask-style-control"><span>Response style</span><select aria-label="Response style" value={responseStyle} onChange={e=>setResponseStyle(e.target.value)}><option value="auto">Auto</option><option value="simple">Simple</option><option value="detailed">Detailed</option><option value="technical">Technical</option></select></div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, paddingTop: 28 }}>
@@ -345,34 +348,16 @@ const res = await fetchAsk(q, context)
                   <ShieldIcon color={color} size={52} />
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-1)', marginBottom: 5 }}>Ask anything about the market</p>
+                  <p style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-1)', marginBottom: 5 }}>What would you like to explore?</p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 480, alignItems: 'center' }}>
-  <button onClick={() => send(SUGGESTIONS[0].text)} style={{ fontSize: 13, padding: '10px 16px', borderRadius: 10, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, width: '70%' }}>
-    <span style={{ fontSize: 16 }}>{SUGGESTIONS[0].icon}</span><span>{SUGGESTIONS[0].text}</span>
-  </button>
-  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-    {[SUGGESTIONS[1], SUGGESTIONS[2]].map((s, i) => (
-      <button key={i} onClick={() => send(s.text)} style={{ flex: 1, fontSize: 13, padding: '9px 14px', borderRadius: 10, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span>{s.icon}</span><span>{s.text}</span>
-      </button>
-    ))}
-  </div>
-  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-    {[SUGGESTIONS[3], SUGGESTIONS[4]].map((s, i) => (
-      <button key={i} onClick={() => send(s.text)} style={{ flex: 1, fontSize: 13, padding: '9px 14px', borderRadius: 10, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span>{s.icon}</span><span>{s.text}</span>
-      </button>
-    ))}
-  </div>
-</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=><button key={i} className="ask-feature-card" onClick={()=>send(item.text)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon">{item.icon}</span><span className="ask-feature-arrow">↗</span></span><strong>{item.label}</strong><span>{item.text}</span></button>)}</div>
               </div>
             )}
 
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', gap: 12, flexDirection: m.role === 'user' ? 'row-reverse' : 'row' }}>
                 <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, marginTop: 2, background: m.role === 'user' ? 'rgba(99,102,241,0.15)' : `${color}15`, border: `1px solid ${m.role === 'user' ? 'rgba(99,102,241,0.3)' : `${color}40`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {m.role === 'user' ? <span style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-mono)' }}>U</span> : <ShieldIcon color={color} size={20} />}
+                  {m.role === 'user' ? <span style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <ShieldIcon color={color} size={20} />}
                 </div>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-ai'} style={{ padding: '12px 16px', maxWidth: '78%', color: 'var(--text-1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0 }}>{m.text}</p>}
@@ -400,7 +385,7 @@ const res = await fetchAsk(q, context)
               <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about volatility, regime, risk…" style={{ flex: 1, minWidth: 0, outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 14, fontFamily: 'var(--font-sans)', border: 'none', resize: 'none', lineHeight: 1.5, height: 52, overflowY: 'auto', padding: 0 }} />
               <button onClick={() => send(input)} disabled={!input.trim() || loading} style={{ width: 36, height: 36, minWidth: 36, borderRadius: 10, background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}`, cursor: input.trim() ? 'pointer' : 'default', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>↑</button>
             </div>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6, textAlign: 'center', fontFamily: 'var(--font-mono)' }}>Enter for new line · tap ↑ to send · 5 requests/hour</p>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>Enter for new line · tap ↑ to send · 5 requests/hour</p>
           </div>
         </div>
       )}
