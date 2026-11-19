@@ -1,7 +1,7 @@
 """
 scripts/update_master_df.py
 
-Runs daily via GitHub Actions at 6:30 AM ET on weekdays.
+Runs after the US market close on weekdays; backfills missing trading dates.
 
 Updates master_df.csv with three sources — exactly matching Phase 2 ingestion:
   1. VIX         — yfinance (^VIX latest close)
@@ -176,62 +176,130 @@ def recompute_rolling(df: pd.DataFrame, new_vix: float) -> dict[str, float]:
 
 # ── Main ───────────────────────────────────────────────────────────────────
 
-def main():
-    print(f'\n=== Daily master_df update — {date.today()} ===\n')
+def fetch_vix_history(start: date) -> pd.Series:
+    """Fetch a rolling year of closes so missed workflow runs are recovered."""
+    import yfinance as yf
+    # A one-year reconciliation window includes the May-November 2026 gap.
+    begin = min(start, date.today() - timedelta(days=370))
+    hist = yf.Ticker('^VIX').history(
+        start=begin.isoformat(),
+        end=(date.today() + timedelta(days=1)).isoformat(),
+        auto_adjust=False,
+    )
+    if hist.empty or 'Close' not in hist:
+        raise RuntimeError('Yahoo Finance returned no VIX closing prices; refusing to overwrite CSV')
+    closes = pd.to_numeric(hist['Close'], errors='coerce').dropna()
+    closes.index = pd.to_datetime(closes.index).tz_localize(None).normalize()
+    closes = closes[(closes > 0) & np.isfinite(closes)]
+    closes = closes[~closes.index.duplicated(keep='last')].sort_index()
+    if closes.empty:
+        raise RuntimeError('No valid VIX closes returned')
+    return closes
 
-    if not CSV.exists():
-        print(f'ERROR: {CSV} not found'); sys.exit(1)
 
-    df        = pd.read_csv(CSV, index_col=0, parse_dates=True)
-    df.index  = pd.to_datetime(df.index)
-    last_date = df.index[-1].date()
-    print(f'Last row: {last_date}  ({len(df)} rows total)')
-
-    # 1. VIX
-    print('\n[1] VIX')
-    vix_date, vix_close = fetch_latest_vix()
-    print(f'    {vix_date}: VIX = {vix_close:.2f}')
-
-    if vix_date <= last_date:
-        print(f'    Already up to date ({last_date}). Exiting.')
-        sys.exit(0)
-
-    # 2. FRED
-    print('\n[2] FRED')
-    fred_vals = fetch_fred_values()
-
-    # 3. News sentiment
-    print(f'\n[3] News sentiment ({vix_date})')
-    headlines = fetch_headlines(vix_date)
-    sentiment = compute_finbert_sentiment(headlines)
-    if sentiment is None:
-        sentiment = float(df['sentiment'].iloc[-1]) if 'sentiment' in df.columns else 0.0
-        print(f'    Forward-filling sentiment: {sentiment:.6f}')
-
-    # 4. Build new row
-    print('\n[4] Building row')
-    new_row = df.iloc[-1].copy()
-    new_row['vix'] = vix_close
-
-    for col in FRED_SERIES:
+def update_derived_features(df: pd.DataFrame, from_date: pd.Timestamp) -> pd.DataFrame:
+    """Recompute dependent VIX fields from the first inserted day onward."""
+    v = pd.to_numeric(df['vix'], errors='coerce')
+    if v.isna().any() or (v <= 0).any():
+        raise RuntimeError('Invalid VIX value in master_df; refusing to publish')
+    mask = df.index >= from_date
+    derived = {
+        'vix_log': np.log(v),
+        'vix_return': v.pct_change(),
+        'vix_lag1': v.shift(1),
+        'vix_lag5': v.shift(5),
+        'vix_lag21': v.shift(21),
+        'vix_roll_mean5': v.rolling(5).mean(),
+        'vix_roll_std21': v.rolling(21).std(),
+        'regime_label': pd.Series(
+            np.select([v < 20, v < 30], ['LOW', 'ELEVATED'], default='CRISIS'),
+            index=df.index,
+        ),
+    }
+    for col, series in derived.items():
         if col in df.columns:
-            new_row[col] = fred_vals.get(col, float(df[col].iloc[-1]))
+            df.loc[mask, col] = series.loc[mask]
+    return df
 
-    if 'sentiment'        in df.columns: new_row['sentiment']        = sentiment
-    if 'sentiment_source' in df.columns: new_row['sentiment_source'] = 'finbert'
 
-    for col, val in recompute_rolling(df, vix_close).items():
-        new_row[col] = val
+def main():
+    print(f'=== Daily master_df reconciliation — {date.today()} ===')
+    if not CSV.exists():
+        raise FileNotFoundError(f'Missing dataset: {CSV}')
 
-    # 5. Append, sort, save
-    df.loc[pd.Timestamp(vix_date)] = new_row
+    df = pd.read_csv(CSV, index_col=0, parse_dates=True)
+    df.index = pd.to_datetime(df.index).normalize()
+    if df.index.has_duplicates:
+        raise RuntimeError('Duplicate dates in master_df; resolve before publishing')
     df = df.sort_index()
-    df.to_csv(CSV)
+    original_count = len(df)
+    last_date = df.index.max().date()
+    print(f'Existing: {original_count} rows; latest {last_date}')
 
-    print(f'\n✓ Saved. master_df now has {len(df)} rows.')
-    print(f'  VIX: {vix_close:.2f}  |  Sentiment: {sentiment:.6f}')
-    for c, v in fred_vals.items():
-        print(f'  {c}: {v:.4f}')
+    # Reconcile historical trading days, not just the most recent close.
+    closes = fetch_vix_history(last_date - timedelta(days=370))
+    missing = closes.index.difference(df.index)
+    # Existing historical VIX observations are preserved; only absent days are added.
+    if len(missing):
+        print(f'Backfilling {len(missing)} missing trading days, {missing.min().date()} to {missing.max().date()}')
+    else:
+        print('No missing VIX trading dates in reconciliation window')
+
+    # Preserve existing macro and sentiment observations. Historical backfill
+    # cannot reconstruct historical news sentiment from today's NewsAPI query.
+    # Carry forward known values, and label carried sentiment explicitly.
+    new_dates = []
+    for dt in missing:
+        prior = df.loc[df.index < dt]
+        if prior.empty:
+            print(f'Skipping {dt.date()}: no earlier feature row to carry forward')
+            continue
+        row = prior.iloc[-1].copy()
+        row['vix'] = float(closes.loc[dt])
+        if 'sentiment_source' in df.columns:
+            row['sentiment_source'] = 'forward_fill'
+        df.loc[dt] = row
+        new_dates.append(dt)
+    df = df.sort_index()
+
+    # Refresh the latest observation's non-VIX features only if a new
+    # trading day was added; older backfilled rows keep labeled carried data.
+    latest_market_day = closes.index.max()
+    if latest_market_day in new_dates:
+        print('Fetching current macro and sentiment for latest added day')
+        fred_vals = fetch_fred_values()
+        for col, value in fred_vals.items():
+            if col in df.columns:
+                df.loc[latest_market_day, col] = value
+        headlines = fetch_headlines(latest_market_day.date())
+        sentiment = compute_finbert_sentiment(headlines)
+        if sentiment is not None and 'sentiment' in df.columns:
+            df.loc[latest_market_day, 'sentiment'] = sentiment
+            if 'sentiment_source' in df.columns:
+                df.loc[latest_market_day, 'sentiment_source'] = 'finbert'
+
+    # Recalculate from the earliest inserted date. Also repair the existing
+    # last row, which previously copied stale log/return/regime values.
+    first_changed = min(new_dates) if new_dates else df.index.max()
+    df = update_derived_features(df, first_changed)
+
+    # Validate before replacing the on-disk dataset.
+    if not df.index.is_monotonic_increasing or df.index.has_duplicates:
+        raise RuntimeError('Dataset dates are not unique and sorted')
+    if len(df) < original_count:
+        raise RuntimeError('Reconciliation unexpectedly removed observations')
+    remaining = closes.index.difference(df.index)
+    if len(remaining):
+        raise RuntimeError(f'{len(remaining)} VIX dates still missing after reconciliation')
+    for col in ('vix', 'vix_log', 'vix_return', 'regime_label'):
+        if col in df.columns and df.loc[first_changed:, col].isna().any():
+            raise RuntimeError(f'Invalid calculated field: {col}')
+
+    # Make the run idempotent: unchanged files must not trigger HF deployments.
+    tmp = CSV.with_suffix('.csv.tmp')
+    df.to_csv(tmp)
+    tmp.replace(CSV)
+    print(f'Validated and saved: {len(df)} rows (+{len(new_dates)}), latest {df.index.max().date()}')
 
 
 if __name__ == '__main__':
