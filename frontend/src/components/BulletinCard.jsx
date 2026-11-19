@@ -68,7 +68,7 @@ function parseBulletin(raw) {
   return map
 }
 
-export default function BulletinCard({ data, loading, error, onRetry }) {
+export default function BulletinCard({ data, loading, error, onRetry, rateLimited = false, retryAfter = 0, cachedAt = null }) {
   const [copied,    setCopied]    = useState(false)
   const [headlines, setHeadlines] = useState([])
   const [headlinesLoading, setHeadlinesLoading] = useState(true)
@@ -102,11 +102,11 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
     </div>
   )
 
-  if (error) return (
+  if (error && !data) return (
     <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 48, paddingBottom: 48 }}>
       <span style={{ fontSize: 24 }}>⚠</span>
-      <p style={{ fontSize: 13, color: 'var(--text-2)' }}>{error}</p>
-      {onRetry && <button onClick={onRetry} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'transparent', cursor: 'pointer' }}>Retry</button>}
+      <p style={{ fontSize: 13, color: 'var(--text-2)' }}>{rateLimited ? 'AI report limit reached. Please try again after the cooldown. No previous report is cached in this browser yet.' : error}</p>
+      {onRetry && !rateLimited && <button onClick={onRetry} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border-light)', color: 'var(--text-1)', background: 'transparent', cursor: 'pointer' }}>Retry</button>}
     </div>
   )
 
@@ -123,6 +123,7 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
   return (
     <div style={{ borderRadius: 20, overflow: 'hidden', border: `1px solid ${borderColor}`, boxShadow: isLight ? '0 8px 40px rgba(0,0,0,0.10)' : '0 8px 40px rgba(0,0,0,0.5)' }}>
 
+      {(rateLimited || error) && <div className="vi-cache-notice" role="status">{rateLimited ? 'AI report limit reached. Displaying the latest saved report' : 'Unable to refresh the AI report. Displaying the latest saved report'}{cachedAt ? ` · Saved ${new Date(cachedAt).toLocaleString()}` : ''}. {rateLimited ? 'Please try again after the request limit resets.' : 'You can retry when the service is available.'}</div>}
       {/* Purple glass market stress report, live figures and existing actions */}
       <div className="vi-report-top">
         <div className="vi-report-heading">
