@@ -351,3 +351,21 @@ body {
   .vol-original-trend{min-height:290px}
   .vol-analytics{min-width:0}
 }
+
+/* Market Explorer mobile light-mode readability and visible Ask Volarix control. */
+@media(max-width:768px){
+ .vol-market-chat-toggle{bottom:calc(82px + env(safe-area-inset-bottom))!important;right:14px!important;z-index:60!important}
+ .vol-market-chat{bottom:calc(140px + env(safe-area-inset-bottom))!important;right:12px!important;width:calc(100vw - 24px)!important;max-height:calc(100dvh - 175px)!important;height:min(530px,calc(100dvh - 175px))!important;z-index:60!important}
+}
+@media(max-width:768px){
+ :root.light .vol-market-explorer{--bg-app:#f7f5ff;--bg-card:#fff;--bg-card-2:#f2edff;--text-1:#20162e;--text-2:#544865;--border:rgba(99,65,150,.22);background:#f7f5ff!important;color:#20162e!important}
+ :root.light .vol-market-explorer .vol-market-stat-card{background:linear-gradient(145deg,#fff,#eee7ff)!important;border-color:rgba(124,88,189,.32)!important;box-shadow:0 7px 22px rgba(64,39,117,.09)!important}
+ :root.light .vol-market-explorer .vol-market-stat-card div,:root.light .vol-market-explorer .vol-market-stat-card span{color:#514463!important}
+ :root.light .vol-market-explorer .vol-market-stat-card div[style*="font-size: 27px"]{color:#241831!important}
+ :root.light .vol-market-explorer section{color:#20162e}
+ :root.light .vol-market-explorer section p,:root.light .vol-market-explorer section span{color:#544865}
+ :root.light .vol-market-explorer section h3,:root.light .vol-market-explorer section strong{color:#20162e}
+ :root.light .vol-market-explorer section button{color:#261c38}
+ :root.light .vol-market-explorer section button[style*="linear-gradient"]{color:#fff}
+ :root.light .vol-market-explorer .vol-market-chat{background:#fff!important;color:#20162e!important}
+}
