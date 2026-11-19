@@ -276,6 +276,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
   </div>
 )}
 
+          <div className="ask-style-control"><span>Response style</span><select aria-label="Response style" value={responseStyle} onChange={e=>setResponseStyle(e.target.value)}><option value="auto">Auto</option><option value="simple">Simple</option><option value="detailed">Detailed</option><option value="technical">Technical</option></select></div>
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
@@ -318,6 +319,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             <div ref={bottomRef} style={{ height: 4 }} />
           </div>
 
+          <div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={e=>{const file=e.target.files?.[0];if(file){const limit=file.type==='application/pdf'?10:5;if(!['image/png','image/jpeg','image/webp','image/gif','application/pdf'].includes(file.type)){setError('Choose a PNG, JPEG, WebP, GIF, or PDF file.')}else if(file.size>limit*1024*1024){setError(`File must be ${limit} MB or smaller.`)}else{setAttachment(file);setError(null)}}e.target.value=''}}/><button type="button" disabled={loading} onClick={()=>fileInputRef.current?.click()} className="ask-attach-button">＋ Attach image or PDF</button>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment">×</button></span>}</div>
           {/* Input — fixed at bottom, never moves */}
           <div className="ask-input-bar">
             <div className="ask-input-row" style={{ border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}` }}>
@@ -330,7 +332,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
               <button
                 className="ask-send-btn"
                 onClick={() => send(input)}
-                disabled={!input.trim() || loading}
+                disabled={(!input.trim() && !attachment) || loading}
                 style={{ background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}` }}
               >↑</button>
             </div>
@@ -392,7 +394,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
           <div style={{ padding: '12px 32px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-sidebar)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: 'var(--bg-card)', border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}`, borderRadius: 14, padding: '10px 10px 10px 16px' }}>
               <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about volatility, regime, risk…" style={{ flex: 1, minWidth: 0, outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 14, fontFamily: 'var(--font-sans)', border: 'none', resize: 'none', lineHeight: 1.5, height: 52, overflowY: 'auto', padding: 0 }} />
-              <button onClick={() => send(input)} disabled={!input.trim() || loading} style={{ width: 36, height: 36, minWidth: 36, borderRadius: 10, background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}`, cursor: input.trim() ? 'pointer' : 'default', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>↑</button>
+              <button onClick={() => send(input)} disabled={(!input.trim() && !attachment) || loading} style={{ width: 36, height: 36, minWidth: 36, borderRadius: 10, background: input.trim() ? `${color}25` : 'transparent', color: input.trim() ? color : 'var(--text-3)', border: `1.5px solid ${input.trim() ? `${color}60` : 'var(--border)'}`, cursor: input.trim() ? 'pointer' : 'default', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>↑</button>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 6, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>Enter for new line · tap ↑ to send · 5 requests/hour</p>
           </div>
