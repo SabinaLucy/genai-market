@@ -1,5 +1,5 @@
 import VolarixLogo from './VolarixLogo'
-const NAV=[['overview','⌂','Overview'],['regime','▥','Regime Analysis'],['bulletin','✧','AI Intelligence'],['ask','☏','Ask Volarix'],['backtest','▱','Backtesting'],['about','ⓘ','About']]
+const NAV=[['overview','⌂','Overview'],['regime','▥','Regime Analysis'],['bulletin','✧','AI Intelligence'],['ask','☏','Ask Volarix'],['backtest','▱','Backtesting'],['about','ⓘ','About'],['market','◷','Market Explorer'],['research','◇','Research Lab'],['workspace','▦','My Workspace'],['settings','⚙','Settings']]
 export default function Sidebar({active,onNav,isDark,onThemeToggle}){
  return <aside className="sidebar vol-sidebar"><div className="vol-side-brand"><VolarixLogo/></div><nav className="vol-side-nav">{NAV.map(([id,icon,label])=><button key={id} className={active===id?'active':''} onClick={()=>onNav(id)}><span>{icon}</span>{label}</button>)}</nav><div className="vol-side-bottom"><div className="vol-side-promo"><span className="vol-promo-wave">⌁</span><h3>AI for<br/>Market Stress</h3><p>Forecast. Explain. Act.</p></div><div className="vol-side-theme"><button className={!isDark?'active':''} onClick={()=>isDark&&onThemeToggle()}>☼</button><button className={isDark?'active':''} onClick={()=>!isDark&&onThemeToggle()}>☾</button></div></div></aside>
 }
