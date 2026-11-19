@@ -1,5 +1,21 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageCircle, BookOpen, ChartNoAxesCombined, ChartColumnIncreasing, ShieldCheck, ChartLine, TrendingUp, ArrowUpRight, Camera, Image as ImageIcon, FileText, Plus, ChevronDown, Check, ArrowUp, X } from 'lucide-react'
+const Sparkles = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>✦</span>
+const MessageCircle = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>◉</span>
+const BookOpen = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>▤</span>
+const ChartNoAxesCombined = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>⌁</span>
+const ChartColumnIncreasing = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>▥</span>
+const ShieldCheck = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>◇</span>
+const ChartLine = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>⌁</span>
+const TrendingUp = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>↗</span>
+const ArrowUpRight = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>↗</span>
+const Camera = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>◎</span>
+const ImageIcon = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>▧</span>
+const FileText = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>▤</span>
+const Plus = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>+</span>
+const ChevronDown = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>⌄</span>
+const Check = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>✓</span>
+const ArrowUp = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>↑</span>
+const X = ({size=18}) => <span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,fontSize:Math.round(size*.92),lineHeight:1}}>×</span>
 import { fetchAsk, fetchAskUpload, fetchHeadlines } from '../api'
 import PageHeader from '../components/PageHeader'
 import useIsMobile from '../useIsMobile'
