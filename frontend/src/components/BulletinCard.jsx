@@ -123,35 +123,22 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
   return (
     <div style={{ borderRadius: 20, overflow: 'hidden', border: `1px solid ${borderColor}`, boxShadow: isLight ? '0 8px 40px rgba(0,0,0,0.10)' : '0 8px 40px rgba(0,0,0,0.5)' }}>
 
-      {/* Header */}
-      <div style={{ padding: isMobile ? '16px 18px' : '22px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: hdrBg, borderBottom: `2px solid ${hdrBorder}`, flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 9, color: isLight ? '#b45309' : '#fbbf24', fontFamily: 'JetBrains Mono, monospace', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
-            Volarix Intelligence · {data.date}
-          </div>
-          <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.02em' }}>Market Stress Report</div>
+      {/* Purple glass market stress report, live figures and existing actions */}
+      <div className="vi-report-top">
+        <div className="vi-report-heading">
+          <span className="vi-report-icon" aria-hidden="true">✧</span>
+          <div className="vi-report-heading-text"><span className="vi-report-eyebrow">VOLARIX INTELLIGENCE · {data.date}</span><h2>Market Stress Report</h2><p>AI-powered market assessment</p></div>
+          <div className="vi-report-actions"><RegimeBadge regime={data.regime} regimeLabel={data.regime_label} size="md"/><button onClick={handleCopy} className="vi-copy-btn">{copied ? '✓ Copied' : 'Copy'}</button></div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <RegimeBadge regime={data.regime} regimeLabel={data.regime_label} size="md" />
-          <button onClick={handleCopy} style={{ fontSize: 11, padding: '5px 12px', borderRadius: 8, border: '1px solid var(--border-light)', color: copied ? '#4ade80' : 'var(--text-1)', background: isLight ? '#fff' : 'rgba(255,255,255,0.05)', cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace', transition: 'color 0.2s' }}>
-            {copied ? '✓' : 'Copy'}
-          </button>
+        <div className="vi-report-metrics">
+          {[
+            {label:'Current VIX',val:fmt(data.current_vix),note:'Latest volatility reading',icon:'◈',kind:'vix'},
+            {label:'5-Day Forecast',val:fmt(data.predicted_vix),note:'Expected volatility',icon:'↘',kind:'forecast'},
+            {label:'Market Regime',val:data.regime_label || data.regime || '—',note:'Current stress classification',icon:'◇',kind:'regime'},
+            {label:'Confidence',val:`${data.confidence_pct ?? 90}%`,note:'Forecast interval level',icon:'◎',kind:'confidence'},
+          ].map(m=><div key={m.kind} className={`vi-report-metric vi-metric-${m.kind}`}><div className="vi-metric-label"><span>{m.label}</span><span aria-hidden="true">{m.icon}</span></div><strong>{m.val}</strong><span className="vi-metric-note">{m.note}</span></div>)}
         </div>
-      </div>
-
-      {/* 4-stat strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', background: statRowBg }}>
-        {[
-          { label: 'Current VIX', val: fmt(data.current_vix),          color: isLight ? '#b45309' : '#fbbf24' },
-          { label: 'Forecast 5d', val: `${fmt(data.predicted_vix)} ↓`, color: isLight ? '#15803d' : '#4ade80' },
-          { label: 'Regime',      val: data.regime || '—',              color: data.regime === 'LOW' ? (isLight ? '#15803d' : '#4ade80') : data.regime === 'CRISIS' ? (isLight ? '#dc2626' : '#f87171') : (isLight ? '#b45309' : '#fbbf24') },
-          { label: 'Confidence',  val: `${data.confidence_pct || 90}%`, color: isLight ? '#5b21b6' : '#c4b5fd' },
-        ].map(({ label, val, color }, i, arr) => (
-          <div key={label} style={{ padding: isMobile ? '10px 12px' : '13px 20px', borderRight: i < arr.length - 1 ? `1px solid ${statBorder}` : 'none', background: statBg }}>
-            <div style={{ fontSize: 8, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: isMobile ? 16 : 22, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color }}>{val}</div>
-          </div>
-        ))}
+        <p className="vi-report-footnote">Forecasts reflect model estimates and may change as new market data becomes available.</p>
       </div>
 
       {/* Decorative intelligence cards — original AI bulletin sections retained */}
