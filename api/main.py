@@ -15,7 +15,7 @@ import pandas as pd
 import torch
 import yfinance as yf
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from huggingface_hub import hf_hub_download
@@ -33,6 +33,7 @@ from src.modeling import LSTMModel, VIXDataset, predict
 from src.analogues import get_analogues, format_analogues_for_bulletin
 from src.explainability import load_explainability_cache, get_top_drivers
 from src.backtesting import run_full_backtest
+from api.ask_assistant import AssistantRequest, answer as answer_assistant, attachment_from_upload
 from src.bulletin_generator import (
     generate_bulletin,
     answer_financial_question,
@@ -629,16 +630,36 @@ def shap():
 
 @app.post("/ask", tags=["genai"])
 @limiter.limit("5/hour")
-def ask(request: Request, body: AskRequest):
+def ask(request: Request, body: AssistantRequest):
+    return safe_json({"question": body.question, "answer": answer_assistant(body)})
+
+
+@app.post("/ask/upload", tags=["genai"])
+@limiter.limit("5/hour")
+async def ask_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    question: str = Form(...),
+    bulletin_context: str = Form(""),
+    history: str = Form("[]"),
+    response_style: str = Form("auto"),
+):
+    import json as _json
     try:
-        answer = answer_financial_question(
-            question         = body.question,
-            bulletin_context = body.bulletin_context,
-        )
-        return safe_json({"question": body.question, "answer": answer})
-    except Exception as exc:
-        traceback.print_exc()
-        raise HTTPException(500, f"Q&A failed: {exc}")
+        turns = _json.loads(history)
+        body = AssistantRequest(question=question, bulletin_context=bulletin_context,
+                                history=turns, response_style=response_style)
+    except (ValueError, TypeError):
+        raise HTTPException(422, "Invalid chat history or question")
+    if file.content_type not in ("image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"):
+        raise HTTPException(415, "Supported files: PNG, JPEG, WebP, GIF, PDF")
+    limit = 10 * 1024 * 1024 if file.content_type == "application/pdf" else 5 * 1024 * 1024
+    data = await file.read(limit + 1)
+    if len(data) > limit:
+        raise HTTPException(413, "File too large")
+    attachment = attachment_from_upload(file.filename or "", file.content_type, data)
+    return safe_json({"question": question, "answer": answer_assistant(body, attachment)})
+
 
 # Headlines cache — refreshes every hour to protect NewsAPI free tier (100 req/day)
 _headlines_cache: dict = {"data": [], "timestamp": 0.0}
