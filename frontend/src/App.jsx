@@ -21,7 +21,7 @@ export default function App() {
   const isMobile = useIsMobile()
   const [page,   setPage]   = useState('overview')
   const [isDark, setIsDark] = useState(() => localStorage.getItem('volarix-theme') !== 'light')
-  const [showSplash, setShowSplash] = useState(isMobile)
+  const [showSplash, setShowSplash] = useState(() => window.matchMedia('(max-width: 768px)').matches && !sessionStorage.getItem('volarix-splash-seen'))
 
   const {
   latest, predict, analogues, shap, backtest, bulletin,
@@ -87,7 +87,7 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={isDark}>
-      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onDone={() => { sessionStorage.setItem('volarix-splash-seen', '1'); setShowSplash(false) }} />}
       <RegimeToast alert={regimeAlert} onDismiss={() => setRegimeAlert(null)} />
 
       <div style={{
