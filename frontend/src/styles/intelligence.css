@@ -1,0 +1,21 @@
+/* Scoped AI Intelligence report design */
+.vi-page{font-family:var(--font-sans)}
+.vi-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px;background:var(--bg-app)}
+.vi-intelligence-card{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border-radius:20px;padding:23px 24px 17px;background:radial-gradient(ellipse at 95% -15%,var(--vi-glow),transparent 62%),linear-gradient(145deg,#302d47,#25243a);border:1px solid var(--vi-border);box-shadow:0 8px 25px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.07);color:#f8f5ff;transition:transform .2s,box-shadow .2s}
+.vi-intelligence-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(0,0,0,.25),0 0 20px var(--vi-glow)}
+.vi-card-stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.vi-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:19px}
+.vi-card-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:14px;background:var(--vi-glow);border:1px solid var(--vi-border);color:var(--vi-accent);font-size:29px;box-shadow:0 0 20px var(--vi-glow)}
+.vi-card-ornament{display:flex;align-items:flex-end;flex-direction:column;gap:3px;color:var(--vi-accent);opacity:.82}
+.vi-card-ornament span{font-size:28px;font-weight:750;line-height:1;color:rgba(215,202,241,.3)}
+.vi-card-eyebrow{font-size:10px;font-weight:750;letter-spacing:.1em;color:var(--vi-accent);margin-bottom:7px}
+.vi-card-title{font-size:20px;letter-spacing:-.025em;font-weight:720;color:#fff;margin:0 0 12px}
+.vi-card-body{font-size:13px;line-height:1.85;color:#e4dff1;flex:1;overflow-wrap:anywhere}
+.vi-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid rgba(224,210,255,.18);margin-top:24px;padding-top:12px;font-size:11px;color:#c8c0dc}
+.vi-card-arrow{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:var(--vi-glow);color:var(--vi-accent);font-size:16px}
+:root.light .vi-intelligence-card{background:radial-gradient(ellipse at 95% -15%,var(--vi-glow),transparent 60%),#fff;color:#242038;box-shadow:0 7px 25px rgba(84,65,123,.09)}
+:root.light .vi-card-title{color:#241d35}
+:root.light .vi-card-body{color:#544c65}
+:root.light .vi-card-footer{border-color:#e8e0f1;color:#706780}
+:root.light .vi-card-ornament span{color:#e6ddec}
+@media(max-width:720px){.vi-card-grid{grid-template-columns:1fr;padding:12px;gap:12px}.vi-intelligence-card{padding:20px}.vi-card-title{font-size:18px}}
