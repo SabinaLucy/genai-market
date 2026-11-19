@@ -14,7 +14,7 @@ export default function SplashScreen({ onDone }) {
       position: 'fixed',
       inset: 0,
       zIndex: 9999,
-      background: 'radial-gradient(ellipse at center, #0e0e1c 0%, #06060f 100%)',
+      background: 'radial-gradient(ellipse at center, #211832 0%, #0d0b1a 72%, #080713 100%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -25,8 +25,8 @@ export default function SplashScreen({ onDone }) {
     }}>
       <style>{`
         @keyframes splashPulse {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(34,211,238,0.4)); }
-          50%      { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(34,211,238,0.7)); }
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(169,125,255,0.38)); }
+          50%      { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(169,125,255,0.60)); }
         }
         @keyframes splashFadeIn {
           from { opacity: 0; transform: translateY(8px); }
@@ -70,14 +70,14 @@ export default function SplashScreen({ onDone }) {
           letterSpacing: '0.25em',
           color: '#f0f0ff',
           fontFamily: 'JetBrains Mono, monospace',
-          textShadow: '0 0 24px rgba(34,211,238,0.4)',
+          textShadow: '0 0 24px rgba(169,125,255,0.38)',
           marginBottom: 10,
         }}>
           VOLARIX
         </div>
         <div style={{
           fontSize: 10,
-          color: '#6b6b9a',
+          color: '#aaa0c4',
           fontFamily: 'JetBrains Mono, monospace',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
