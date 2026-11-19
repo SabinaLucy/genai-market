@@ -90,3 +90,8 @@
 :root.light .vi-copy-btn{color:#302641;background:#fff;border-color:#ded2ee}
 @media(max-width:900px){.vi-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.vi-report-metrics{gap:8px}.vi-report-metric{padding:12px}.vi-report-metric strong{font-size:19px}.vi-report-heading{gap:9px}}
+
+/* Override only this page's legacy orange PageHeader gradient */
+.vi-page > div:first-child > div:first-child > div:nth-child(2) > span:first-child{background:none!important;-webkit-text-fill-color:var(--text-1)!important;color:var(--text-1)!important;font-family:var(--font-sans)!important;font-weight:750!important}
+.vi-page > div:first-child > div:first-child > div:nth-child(2) > span:nth-child(2){background:none!important;-webkit-text-fill-color:var(--text-2)!important;color:var(--text-2)!important;font-family:var(--font-sans)!important;font-size:13px!important;letter-spacing:0!important;font-weight:400!important}
+.vi-page > div:first-child > div:first-child > div:first-child{background:linear-gradient(180deg,#c4a0ff,#8155d5)!important;box-shadow:0 0 14px rgba(175,133,255,.3)!important}
