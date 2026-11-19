@@ -403,3 +403,32 @@ body {
  :root.light .vol-market-explorer section svg text{fill:#645474!important}
  :root.light .vol-market-explorer section svg path[stroke="#b95aff"]{stroke:#8652d4}
 }
+
+/* Preserve actual VIX regime colors on mobile light-mode calendar cells.
+   Scope to day cells so month/year navigation keeps the lavender theme. */
+@media(max-width:768px){
+ :root.light .vol-market-explorer .vol-calendar-day.has-vix,
+ :root.light .vol-market-explorer section button.vol-calendar-day.has-vix{
+   color:#182033!important;
+   border:1px solid rgba(36,28,56,.16)!important;
+   font-weight:750;
+ }
+ :root.light .vol-market-explorer button.vol-calendar-day[data-stress="calm"]{background:#25b889!important}
+ :root.light .vol-market-explorer button.vol-calendar-day[data-stress="elevated"]{background:#e8c348!important}
+ :root.light .vol-market-explorer button.vol-calendar-day[data-stress="high"]{background:#f28a32!important}
+ :root.light .vol-market-explorer button.vol-calendar-day[data-stress="extreme"]{background:#e63c58!important;color:#fff!important}
+ :root.light .vol-market-explorer button.vol-calendar-day.no-vix{
+   background:#f0ebfa!important;
+   color:#a398b7!important;
+   border:1px solid #e4dbf1!important;
+   box-shadow:none!important;
+ }
+ :root.light .vol-market-explorer .vol-market-monthly{
+   background:linear-gradient(145deg,#fff,#f8f4ff)!important;
+   border:1px solid #ded2f3!important;
+   color:#241b35!important;
+   box-shadow:0 8px 24px rgba(71,43,124,.08)!important;
+ }
+ :root.light .vol-market-explorer .vol-market-monthly span{color:#514665!important}
+ :root.light .vol-market-explorer .vol-market-monthly strong{color:#241b35!important}
+}
