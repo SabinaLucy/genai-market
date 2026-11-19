@@ -14,6 +14,7 @@ import BulletinPage  from './pages/BulletinPage'
 import AskPage       from './pages/AskPage'
 import BacktestPage  from './pages/BacktestPage'
 import AboutPage     from './pages/AboutPage'
+import IntelligenceWorkspace from './components/IntelligenceWorkspace'
 
 export default function App() {
   const isMobile = useIsMobile()
@@ -95,6 +96,7 @@ export default function App() {
 
       <div className="main-content" style={{ position: 'relative', zIndex: 1, paddingBottom: page === 'ask' ? 0 : undefined }}>
         {pages[page] || pages.overview}
+        <IntelligenceWorkspace page={page} onNav={setPage} latest={latest} predict={predict} analogues={analogues} backtest={backtest} shap={shap} />
       </div>
     </ThemeContext.Provider>
   )
