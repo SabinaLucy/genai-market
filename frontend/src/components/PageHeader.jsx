@@ -7,7 +7,7 @@ const PAGE_CONFIG = {
   overview: { color: '#a78bfa', glow: 'rgba(167,139,250,0.5)', bar: 'linear-gradient(180deg,#a78bfa,#6366f1)', title: 'linear-gradient(90deg,#22d3ee 0%,#a78bfa 40%,#22d3ee 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#a78bfa)' },
   regime:   { color: '#fbbf24', glow: 'rgba(245,158,11,0.4)',  bar: 'linear-gradient(180deg,#fbbf24,#f59e0b)', title: 'linear-gradient(90deg,#f97316 0%,#fbbf24 40%,#f97316 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#fbbf24)' },
   bulletin: { color: '#f87171', glow: 'rgba(239,68,68,0.4)',   bar: 'linear-gradient(180deg,#f87171,#ef4444)', title: 'linear-gradient(90deg,#fb923c 0%,#f87171 40%,#fb923c 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#f87171)' },
-  ask:      { color: '#22d3ee', glow: 'rgba(6,182,212,0.4)',   bar: 'linear-gradient(180deg,#22d3ee,#06b6d4)', title: 'linear-gradient(90deg,#818cf8 0%,#22d3ee 40%,#818cf8 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#22d3ee)' },
+  ask:      { color: '#a78bfa', glow: 'rgba(167,139,250,0.4)', bar: 'linear-gradient(180deg,#a78bfa,#7c3aed)', title: 'linear-gradient(90deg,#a78bfa 0%,#c4b5fd 55%,#8b5cf6 100%)', subtitle: 'linear-gradient(90deg,#c4b5fd,#a78bfa)' },
   backtest: { color: '#4ade80', glow: 'rgba(34,197,94,0.4)',   bar: 'linear-gradient(180deg,#4ade80,#22c55e)', title: 'linear-gradient(90deg,#34d399 0%,#4ade80 40%,#34d399 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#4ade80)' },
   about:    { color: '#c4b5fd', glow: 'rgba(139,92,246,0.4)',  bar: 'linear-gradient(180deg,#c4b5fd,#8b5cf6)', title: 'linear-gradient(90deg,#818cf8 0%,#c4b5fd 40%,#818cf8 100%)', subtitle: 'linear-gradient(90deg,#c0c0e0,#c4b5fd)' },
 }
@@ -28,11 +28,11 @@ export default function PageHeader({ title, subtitle, page, lastUpdated, regime,
   }
 
   const subtitleStyle = {
-    fontSize:      isMobile ? 10 : 12,
+    fontSize:      page === 'ask' ? (isMobile ? 12 : 14) : (isMobile ? 10 : 12),
     color:         'var(--text-2)',
     marginTop:     isMobile ? 2 : 4,
-    fontFamily:    'var(--font-mono)',
-    letterSpacing: '0.02em',
+    fontFamily:    page === 'ask' ? 'var(--font-sans)' : 'var(--font-mono)',
+    letterSpacing: page === 'ask' ? '0' : '0.02em',
     fontWeight:    500,
     display:       'block',
     overflow:      isMobile ? 'hidden' : 'visible',
