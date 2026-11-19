@@ -5,10 +5,10 @@ import { fetchHeadlines } from '../api'
 import { fmt } from '../utils'
 
 const TILES = [
-  { key: 'SUMMARY',            label: 'Summary',           icon: '◈', dark: { color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', top: 'linear-gradient(90deg,#8b5cf6,#a78bfa)' }, light: { color: '#6d28d9', bg: 'rgba(109,40,217,0.08)', border: 'rgba(109,40,217,0.25)', top: 'linear-gradient(90deg,#8b5cf6,#a78bfa)' } },
-  { key: 'KEY DRIVERS',        label: 'Key Drivers',       icon: '↑', dark: { color: '#fbbf24', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.3)', top: 'linear-gradient(90deg,#f59e0b,#fbbf24)' }, light: { color: '#b45309', bg: 'rgba(180,83,9,0.08)',    border: 'rgba(180,83,9,0.25)',    top: 'linear-gradient(90deg,#f59e0b,#fbbf24)' } },
+  { key: 'SUMMARY',            label: 'Market Summary',    icon: '✧', dark: { color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', top: 'linear-gradient(90deg,#8b5cf6,#a78bfa)' }, light: { color: '#6d28d9', bg: 'rgba(109,40,217,0.08)', border: 'rgba(109,40,217,0.25)', top: 'linear-gradient(90deg,#8b5cf6,#a78bfa)' } },
+  { key: 'KEY DRIVERS',        label: 'Key Market Drivers', icon: '↗', dark: { color: '#fbbf24', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.3)', top: 'linear-gradient(90deg,#f59e0b,#fbbf24)' }, light: { color: '#b45309', bg: 'rgba(180,83,9,0.08)',    border: 'rgba(180,83,9,0.25)',    top: 'linear-gradient(90deg,#f59e0b,#fbbf24)' } },
   { key: 'HISTORICAL CONTEXT', label: 'Historical Context',icon: '◎', dark: { color: '#4ade80', bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.3)',  top: 'linear-gradient(90deg,#22c55e,#4ade80)' }, light: { color: '#15803d', bg: 'rgba(21,128,61,0.08)',  border: 'rgba(21,128,61,0.25)',   top: 'linear-gradient(90deg,#22c55e,#4ade80)' } },
-  { key: 'SIGNAL',             label: 'Signal',             icon: '▲', dark: { color: '#c4b5fd', bg: 'rgba(124,58,237,0.10)', border: 'rgba(124,58,237,0.3)', top: 'linear-gradient(90deg,#7c3aed,#c4b5fd)' }, light: { color: '#5b21b6', bg: 'rgba(91,33,182,0.08)',  border: 'rgba(91,33,182,0.25)',   top: 'linear-gradient(90deg,#7c3aed,#c4b5fd)' } },
+  { key: 'SIGNAL',             label: 'Market Signal',     icon: '◎', dark: { color: '#c4b5fd', bg: 'rgba(124,58,237,0.10)', border: 'rgba(124,58,237,0.3)', top: 'linear-gradient(90deg,#7c3aed,#c4b5fd)' }, light: { color: '#5b21b6', bg: 'rgba(91,33,182,0.08)',  border: 'rgba(91,33,182,0.25)',   top: 'linear-gradient(90deg,#7c3aed,#c4b5fd)' } },
 ]
 
 const FULL_ROWS = [
@@ -154,36 +154,32 @@ export default function BulletinCard({ data, loading, error, onRetry }) {
         ))}
       </div>
 
-      {/* 2x2 tile grid — single column on mobile */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 10 : 16, padding: isMobile ? '12px' : '20px', background: gridBg }}>
-        {TILES.map(tile => {
+      {/* Decorative intelligence cards — original AI bulletin sections retained */}
+      <div className="vi-card-grid">
+        {TILES.map((tile, i) => {
           const c = isLight ? tile.light : tile.dark
-          return (
-            <div key={tile.key} style={{
-              borderRadius: 16,
-              padding: isMobile ? '16px 18px' : '28px 28px',
-              position: 'relative',
-              overflow: 'hidden',
-              border: `1px solid ${c.border}`,
-              background: isLight ? '#ffffff' : 'linear-gradient(145deg,#13131f,#0e0e1a)',
-              boxShadow: isLight ? '0 4px 20px rgba(0,0,0,0.07), 0 1px 0 rgba(255,255,255,0.9) inset' : '0 4px 20px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.06) inset',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-            }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: c.top, borderRadius: '16px 16px 0 0' }} />
-              <div style={{ position: 'absolute', top: -40, right: -40, width: 100, height: 100, borderRadius: '50%', background: c.color, opacity: isLight ? 0.05 : 0.06 }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0, background: c.bg, border: `1px solid ${c.border}`, color: c.color, boxShadow: isLight ? 'none' : `0 0 10px ${c.border}` }}>
-                  {tile.icon}
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace', color: c.color, textShadow: isLight ? 'none' : `0 0 20px ${c.border}` }}>
-                  {tile.label}
-                </div>
+          const subtitles = ['THE BIG PICTURE', "WHAT'S MOVING MARKETS", 'LOOKING BACK', 'AI INTERPRETATION']
+          const footers = ['Market overview', 'Influencing factors', 'Past comparisons', 'Model insights']
+          const lines = [
+            'M0 19 Q12 2 24 14 T48 9 T75 3',
+            'M0 22 L12 17 L23 20 L37 7 L51 12 L64 3 L75 1',
+            'M0 18 Q10 2 20 18 T40 18 T60 18 T75 8',
+            'M0 22 Q14 20 24 13 T47 16 T75 2',
+          ]
+          return <article className={`vi-intelligence-card vi-card-${i}`} key={tile.key} style={{ '--vi-accent': c.color, '--vi-glow': c.bg, '--vi-border': c.border }}>
+            <div className="vi-card-stripe" style={{background:c.top}} />
+            <div className="vi-card-head">
+              <span className="vi-card-icon" aria-hidden="true">{tile.icon}</span>
+              <div className="vi-card-ornament" aria-hidden="true">
+                <span>0{i+1}</span>
+                <svg viewBox="0 0 75 26" width="75" height="26"><path d={lines[i]} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"/><circle cx="73" cy={i===0?3:i===1?1:i===2?8:2} r="3" fill="currentColor"/></svg>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.75 }}>
-                {styledText(sections[tile.key] || 'Loading analysis…', isLight)}
-              </p>
             </div>
-          )
+            <div className="vi-card-eyebrow">{subtitles[i]}</div>
+            <h3 className="vi-card-title">{tile.label}</h3>
+            <p className="vi-card-body">{styledText(sections[tile.key] || 'Analysis unavailable for this section.', isLight)}</p>
+            <div className="vi-card-footer"><span>{footers[i]}</span><span className="vi-card-arrow" aria-hidden="true">↗</span></div>
+          </article>
         })}
       </div>
 
