@@ -200,6 +200,12 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
   return (
     <>
       <style>{`
+        .ask-redesign{font-family:var(--font-sans)!important;font-size:14px}
+        .ask-redesign .bubble-ai,.ask-redesign .bubble-user{font-family:var(--font-sans)!important;font-size:14px;line-height:1.75}
+        .ask-redesign textarea,.ask-redesign input{font-family:var(--font-sans)!important;font-size:14px!important;line-height:1.6}
+        .ask-redesign .ask-attached-name{font-family:var(--font-sans);font-size:13px}
+        .ask-redesign .ask-feature-card>span:last-child{font-size:14px;line-height:1.55}
+
         .ask-style-control{position:relative;z-index:10}
         .ask-style-wrap,.ask-attach-wrap{position:relative}
         .ask-style-pill{display:flex;align-items:center;gap:8px;background:rgba(168,126,238,.13);border:1px solid rgba(170,133,240,.4);border-radius:999px;padding:9px 13px;color:var(--text-1);cursor:pointer;font:500 13px var(--font-sans)}
@@ -308,7 +314,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
           {/* Header — fixed at top */}
           <PageHeader
             title="Ask Volarix"
-            subtitle="Your AI assistant for understanding market volatility"
+            subtitle="Explore markets, understand risk, and ask questions your way"
             page="ask"
             regime={regime}
             regimeLabel={latest?.data?.regime_label}
@@ -388,7 +394,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
       ) : (
         /* ── DESKTOP  */
         <div className="fade-up ask-redesign" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <PageHeader title="Ask Volarix" subtitle="Your AI assistant for understanding market volatility" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
+          <PageHeader title="Ask Volarix" subtitle="Explore markets, understand risk, and ask questions your way" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
   {messages.length > 0 && (
     <button onClick={clearHistory} style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-sans)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
       Clear history
