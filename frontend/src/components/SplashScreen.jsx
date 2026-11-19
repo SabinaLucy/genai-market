@@ -4,8 +4,8 @@ export default function SplashScreen({ onDone }) {
   const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 3500)
-    const doneTimer = setTimeout(() => onDone(), 4000)
+    const fadeTimer = setTimeout(() => setFading(true), 1050)
+    const doneTimer = setTimeout(() => onDone(), 1450)
     return () => { clearTimeout(fadeTimer); clearTimeout(doneTimer) }
   }, [onDone])
 
@@ -21,7 +21,7 @@ export default function SplashScreen({ onDone }) {
       justifyContent: 'center',
       gap: 24,
       opacity: fading ? 0 : 1,
-      transition: 'opacity 0.5s ease-out',
+      transition: 'opacity 0.4s ease-out',
     }}>
       <style>{`
         @keyframes splashPulse {
@@ -45,30 +45,18 @@ export default function SplashScreen({ onDone }) {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <svg width="84" height="84" viewBox="210 72 260 370" fill="none">
+        <svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Volarix V logo">
           <defs>
-            <linearGradient id="sp-s" x1="340" y1="72" x2="340" y2="428" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stopColor="#1b6b82" />
-              <stop offset="100%" stopColor="#0c2f4a" />
-            </linearGradient>
-            <linearGradient id="sp-t" x1="304" y1="405" x2="304" y2="108" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stopColor="#1d8fa8" />
-              <stop offset="100%" stopColor="#5ee0f5" />
-            </linearGradient>
-            <linearGradient id="sp-w" x1="235" y1="310" x2="435" y2="200" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stopColor="#5dd8ee" />
-              <stop offset="100%" stopColor="#a8eef8" />
+            <linearGradient id="vol-v" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#d6b9ff"/>
+              <stop offset="55%" stopColor="#9d72f6"/>
+              <stop offset="100%" stopColor="#6545c8"/>
             </linearGradient>
           </defs>
-          <path d="M340 72 L210 118 L210 240 C210 330 270 400 340 428 C410 400 470 330 470 240 L470 118 Z" fill="url(#sp-s)" stroke="#2a9ab8" strokeWidth="2" strokeLinejoin="round" />
-          <polyline points="235,310 268,268 295,292 322,240 350,270 378,220 405,248 435,200" stroke="url(#sp-w)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <circle cx="295" cy="292" r="6" fill="#5dd8ee" />
-          <circle cx="350" cy="270" r="6" fill="#5dd8ee" />
-          <circle cx="405" cy="248" r="6" fill="#5dd8ee" />
-          <line x1="304" y1="405" x2="304" y2="158" stroke="url(#sp-t)" strokeWidth="16" strokeLinecap="round" />
-          <polygon points="304,108 282,158 326,158" fill="#4dd8f0" />
-          <line x1="385" y1="385" x2="452" y2="192" stroke="#22c55e" strokeWidth="10" strokeLinecap="round" opacity="0.9" />
-          <polygon points="465,158 442,194 470,204" fill="#22c55e" opacity="0.9" />
+          <rect x="6" y="6" width="84" height="84" rx="25" fill="#211936" stroke="#8e6bda" strokeWidth="1.5"/>
+          <path d="M23 27 L39 27 L48 60 L58 27 L74 27 L57 72 L39 72 Z" fill="url(#vol-v)"/>
+          <path d="M58 27 L74 27 L57 72 L48 72 Z" fill="#c5a1ff" opacity=".48"/>
+          <circle cx="75" cy="21" r="3" fill="#cdb0ff"/>
         </svg>
       </div>
 
@@ -100,8 +88,8 @@ export default function SplashScreen({ onDone }) {
 
       <div style={{
         height: 2,
-        background: 'linear-gradient(90deg,transparent,#22d3ee,transparent)',
-        animation: 'splashLine 1.5s ease-out 0.8s forwards',
+        background: 'linear-gradient(90deg,transparent,#a778ff,transparent)',
+        animation: 'splashLine 0.8s ease-out 0.15s forwards',
         borderRadius: 2,
       }} />
     </div>
