@@ -2,7 +2,7 @@ name: Daily master_df Update
 
 on:
   schedule:
-    - cron: '30 11 * * 1-5'
+    - cron: '0 23 * * 1-5'
   workflow_dispatch:
 
 env:
@@ -11,7 +11,9 @@ env:
 jobs:
   update:
     runs-on: ubuntu-22.04
-    timeout-minutes: 40
+    timeout-minutes: 45
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -50,25 +52,67 @@ jobs:
           NEWSAPI_KEY:  ${{ secrets.NEWSAPI_KEY }}
         run: python scripts/update_master_df.py
 
-      - name: Push updated CSV to HuggingFace Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Validate CSV before publishing
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+          path = Path("data/processed/master_df.csv")
+          df = pd.read_csv(path, parse_dates=["date"]).sort_values("date")
+          assert not df["date"].duplicated().any(), "Duplicate dates"
+          assert df["vix"].notna().all() and (df["vix"] > 0).all(), "Invalid VIX"
+          assert df["date"].is_monotonic_increasing, "Unsorted dates"
+          print(f"Validated {len(df)} rows; latest={df['date'].max().date()}")
+          PY
+
+      - name: Detect dataset changes
+        id: changes
+        run: |
+          if git diff --quiet -- data/processed/master_df.csv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Dataset unchanged"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Dataset changed"
+          fi
+
+      - name: Save CSV to GitHub main
+        if: steps.changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/processed/master_df.csv
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
-          git remote add space https://SabinaLucy:${HF_TOKEN}@huggingface.co/spaces/SabinaLucy/volarix.git
-          git push space HEAD:main --force
+          git commit -m "chore(data): reconcile VIX history $(date -u '+%Y-%m-%d')"
+          git push origin HEAD:main
 
-      - name: Restart HuggingFace Space
-        if: success()
+      - name: Publish CSV to Hugging Face without overwriting other files
+        if: steps.changes.outputs.changed == 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST \
-            "https://huggingface.co/api/spaces/SabinaLucy/volarix/restart?factory=true" \
-            -H "Authorization: Bearer $HF_TOKEN")
-          echo "HF restart response: $STATUS"
+          test -n "$HF_TOKEN" || { echo "HF_TOKEN is missing"; exit 1; }
+          python -m pip install huggingface_hub
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_file(
+              path_or_fileobj="data/processed/master_df.csv",
+              path_in_repo="data/processed/master_df.csv",
+              repo_id="SabinaLucy/volarix",
+              repo_type="space",
+              commit_message="chore(data): update master_df trading history",
+          )
+          print("Uploaded master_df.csv to Hugging Face Space")
+          PY
+
+      - name: Restart Hugging Face Space
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          test -n "$HF_TOKEN"
+          curl --fail-with-body --show-error --silent \
+            --retry 3 -X POST \
+            "https://huggingface.co/api/spaces/SabinaLucy/volarix/restart" \
+            -H "Authorization: Bearer $HF_TOKEN"
