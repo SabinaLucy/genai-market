@@ -22,3 +22,17 @@
 :root.light .vr-ai-explainer-icon{color:#7850b5}
 :root.light .vr-drivers-panel .vr-driver-value .up{color:#b44f82}
 :root.light .vr-drivers-panel .vr-driver-value .down{color:#7552b8}
+
+/* Current regime spotlight — selected dynamically from live classification */
+.vr-regime-card{overflow:visible;transition:border-color .25s,box-shadow .25s,background .25s,transform .25s}
+.vr-regime-card.crisis .vr-regime-title{color:#f1a0b5}
+.vr-regime-card.crisis .vr-regime-icon{color:#f1a0b5;background:rgba(241,160,181,.13)}
+.vr-regime-card.selected{z-index:1;isolation:isolate;overflow:hidden;border:2px solid #c29aff;padding:21px;background:radial-gradient(ellipse at 50% -25%,rgba(166,115,255,.44),transparent 72%),linear-gradient(145deg,rgba(75,57,109,.94),rgba(43,39,67,.96));box-shadow:0 14px 38px rgba(127,81,222,.34),0 0 32px rgba(187,145,255,.24),inset 0 1px 0 rgba(235,215,255,.22)}
+.vr-regime-card.selected .vr-regime-icon{width:48px;height:48px;font-size:28px;margin-bottom:14px;background:rgba(191,153,255,.22);box-shadow:0 0 20px rgba(183,135,255,.2)}
+.vr-regime-card.selected .vr-regime-title{font-size:19px}
+.vr-regime-card .vr-current{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:999px;background:linear-gradient(135deg,#c9aaff,#a985f1);border:1px solid rgba(247,236,255,.55);color:#211537;font-size:10px;letter-spacing:.075em;font-weight:800;box-shadow:0 0 20px rgba(193,150,255,.5),0 4px 16px rgba(29,15,58,.23);white-space:nowrap}
+.vr-current-dot{width:7px;height:7px;border-radius:50%;background:#39255b;box-shadow:0 0 0 3px rgba(57,37,91,.13)}
+.vr-regime-accent{position:absolute;bottom:0;left:15%;right:15%;height:4px;border-radius:8px 8px 0 0;background:linear-gradient(90deg,transparent,#d4b5ff 22%,#e3caff 50%,#d4b5ff 78%,transparent);box-shadow:0 -4px 19px 4px rgba(191,146,255,.7)}
+:root.light .vr-regime-card.selected{background:radial-gradient(ellipse at 50% -20%,rgba(183,150,250,.35),transparent 75%),linear-gradient(145deg,#fff,#eee6ff);box-shadow:0 15px 34px rgba(116,79,184,.22),0 0 24px rgba(174,129,241,.18)}
+:root.light .vr-regime-card .vr-current{color:#27173c}
+@media(max-width:620px){.vr-regime-card.selected{padding:15px}.vr-regime-card .vr-current{top:13px;right:13px;padding:7px 10px}.vr-regime-card.selected .vr-regime-icon{width:43px;height:43px;font-size:25px}}
