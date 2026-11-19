@@ -33,7 +33,14 @@ function InfoTip({ text, title }) {
               <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#a78bfa', fontWeight: 700, flexShrink: 0 }}>i</div>
               <div style={{ fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#a78bfa', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{title || 'What is this?'}</div>
             </div>
-            <div style={{ padding: '10px 14px 14px', fontSize: 12, lineHeight: 1.7, color: '#c8c8f0' }}>{text}</div>
+            <style>{`
+        .vol-backtest,.vol-backtest p,.vol-backtest span,.vol-backtest td,.vol-backtest button{font-family:var(--font-sans)!important}
+        .vol-backtest .stat-card{background:linear-gradient(145deg,var(--bg-card),rgba(111,76,170,.09));border:1px solid rgba(167,139,250,.24);border-radius:16px;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.07)}
+        .vol-backtest .stat-card:hover{border-color:rgba(167,139,250,.55);transform:translateY(-2px);transition:transform .18s,border-color .18s}
+        .vol-backtest .card{border-radius:16px;border:1px solid rgba(167,139,250,.22)}
+        .vol-backtest .stat-card span{letter-spacing:normal}
+      `}</style>
+      <div style={{ padding: '10px 14px 14px', fontSize: 12, lineHeight: 1.7, color: '#c8c8f0' }}>{text}</div>
           </div>
         </>,
         document.body
@@ -70,8 +77,8 @@ export default function BacktestPage({ backtest }) {
   const px         = isMobile ? 12 : 32
 
   return (
-    <div className="fade-up">
-      <PageHeader title="Strategy Backtest" subtitle="SPY vs Naive vs Hysteresis · 2022 to 2026" page="backtest" />
+    <div className="fade-up vol-backtest" style={{fontFamily:"var(--font-sans)"}}>
+      <PageHeader title="Backtesting" subtitle="Explore how Volarix strategies performed against historical market data" page="backtest" />
       <div style={{ padding: `${isMobile ? 14 : 28}px ${px}px`, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 20 }}>
 
         {backtest.loading ? (
@@ -89,14 +96,14 @@ export default function BacktestPage({ backtest }) {
                 return (
                   <div key={s.key} className={`stat-card ${s.cls}`} style={{ position: 'relative' }}>
                     {isBest && <span style={{ position: 'absolute', top: 12, right: 14, fontSize: 9, color: s.text, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>BEST ★</span>}
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 10, color: 'var(--text-1)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0', textTransform: 'none', fontFamily: 'var(--font-sans)', marginBottom: 10, color: 'var(--text-1)', display: 'flex', alignItems: 'center', gap: 7 }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, display: 'inline-block', boxShadow: `0 0 6px ${s.color}80` }} />{s.label}
                         {s.key === 'spy_stats'   && <InfoTip title="Buy and Hold" text="The simplest strategy - buy SPY at the start and hold it the entire time no matter what happens. This is the baseline everything else is compared against." />}
                         {s.key === 'naive_stats' && <InfoTip title="Naive Switch" text="This strategy moves to cash whenever the model detects a CRISIS regime and goes back into SPY when it clears. Simple but it reacts too quickly and makes too many trades." />}
                         {s.key === 'hyst_stats'  && <InfoTip title="Hysteresis" text="This strategy requires two consecutive CRISIS signals before exiting and three consecutive clear signals before re-entering. It is more patient and avoids unnecessary trades. This is why it outperformed the other two." />}
                     </div>
                     <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-mono)', color: s.text, letterSpacing: '-0.02em', marginBottom: 3 }}>{stats ? fmt(stats.sharpe_ratio, 3) : '—'}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
                         Sharpe ratio
                        <InfoTip title="What is Sharpe Ratio?" text="The Sharpe ratio measures how much return you got for the risk you took. A higher number is better. Above 1.0 is good. Above 2.0 is excellent. It lets you compare strategies fairly even if they have different risk levels." />
                     </div>
@@ -106,8 +113,8 @@ export default function BacktestPage({ backtest }) {
                       ['Worst drawdown',pct(stats.max_drawdown)],
                     ].map(([k, v]) => (
                       <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{k}</span>
-                        <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: k === 'Worst drawdown' ? '#f87171' : 'var(--text-1)', fontWeight: 500 }}>{v}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{k}</span>
+                        <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: k === 'Worst drawdown' ? '#f87171' : 'var(--text-1)', fontWeight: 500 }}>{v}</span>
                       </div>
                     ))}
                   </div>
@@ -117,7 +124,7 @@ export default function BacktestPage({ backtest }) {
 
             {!isMobile && (
               <div className="card" style={{ padding: 22, overflowX: 'auto' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'var(--font-sans)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                     Period: {d.test_period_start} to {d.test_period_end} · Tx cost: {(d.transaction_cost * 100).toFixed(2)}% · Rf: {(d.risk_free_rate * 100).toFixed(0)}%
                     <InfoTip title="What do these mean?" text="Tx cost is the transaction cost applied every time a strategy switches between SPY and cash — 0.05% per trade. Rf is the risk free rate used to calculate the Sharpe ratio, representing what you could earn doing nothing." />
                 </div>
@@ -134,7 +141,7 @@ export default function BacktestPage({ backtest }) {
                       const isBest = Math.abs((stats.sharpe_ratio || 0) - bestSharpe) < 0.001
                       return (
                         <tr key={s.key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isBest ? `${s.color}08` : 'transparent' }}>
-                          <td style={{ padding: '10px 0', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                          <td style={{ padding: '10px 0', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
                               <span style={{ color: s.text }}>{s.label}{isBest ? ' ★' : ''}</span>
