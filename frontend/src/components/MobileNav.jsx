@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ThemeToggle from './ThemeToggle'
 
 const NAV = [
@@ -10,9 +11,11 @@ const NAV = [
 ]
 
 export default function MobileNav({ active, onNav, isDark, onThemeToggle }) {
+  const [more,setMore]=useState(false)
   return (
     <div className="mobile-nav" style={{ flexDirection: 'column', padding: 0 }}>
 
+      {more && <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8,padding:12,background:'var(--bg-sidebar)'}}>{[['market','Market Explorer'],['research','Research Lab'],['workspace','My Workspace'],['settings','Settings']].map(([id,label])=><button key={id} onClick={()=>{onNav(id);setMore(false)}} style={{padding:12,border:'1px solid var(--border)',borderRadius:10,background:active===id?'var(--bg-hover)':'var(--bg-card)',color:'var(--text-1)'}}>{label}</button>)}</div>}
       {/* Nav icons row */}
       <div style={{ display: 'flex', width: '100%', padding: '7px 0 10px', background: 'var(--bg-sidebar)' }}>
         {NAV.map(item => (
@@ -30,6 +33,7 @@ export default function MobileNav({ active, onNav, isDark, onThemeToggle }) {
             }}>{item.label}</span>
           </button>
         ))}
+        <button onClick={()=>setMore(v=>!v)} aria-label="More Volarix pages" style={{flex:1,border:0,background:'transparent',color:'var(--text-2)',fontSize:11}}>☷<br/>More</button>
       </div>
 
       {/* Theme toggle strip — sits BELOW nav icons */}
