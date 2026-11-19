@@ -39,7 +39,7 @@ const SUGGESTIONS_DESK = [
   { icon: '⚡', text: 'Is a spike likely in 5 days?' },
 ]
 
-const FEATURED = [{icon:ChartColumnIncreasing,label:'Market volatility',text:"What's moving the markets?",question:'What is driving volatility?'},{icon:ShieldCheck,label:'Understand risk',text:"Explore today's market regime",question:'Explain the current market regime'},{icon:ChartLine,label:'Historical patterns',text:'Compare with past market events',question:'How does today compare with 2020?'},{icon:TrendingUp,label:'Market outlook',text:'Explore potential scenarios',question:'What is the market outlook?'}]
+const FEATURED = [{emoji:'📈',icon:ChartColumnIncreasing,label:'Market volatility',text:"What's moving the markets?",question:'What is driving volatility?'},{emoji:'🛡️',icon:ShieldCheck,label:'Understand risk',text:"Explore today's market regime",question:'Explain the current market regime'},{emoji:'📊',icon:ChartLine,label:'Historical patterns',text:'Compare with past market events',question:'How does today compare with 2020?'},{emoji:'🔮',icon:TrendingUp,label:'Market outlook',text:'Explore potential scenarios',question:'What is the market outlook?'}]
 const STYLE_OPTIONS = [{value:'auto',label:'Adaptive',desc:'Adjusts naturally to you',icon:Sparkles},{value:'simple',label:'Simple',desc:'Easy explanations',icon:MessageCircle},{value:'detailed',label:'Detailed',desc:'More depth and context',icon:BookOpen},{value:'technical',label:'Technical',desc:'Advanced analysis',icon:ChartNoAxesCombined}]
 const STYLE_KEY = 'volarix-response-style'
 const STYLE_HINTS = {simple:'Use simple English suitable for a beginner.',detailed:'Give a thorough, clear explanation.',technical:'Use precise financial terminology and explain assumptions.'}
@@ -213,6 +213,8 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
         .ask-input-row{gap:10px!important;padding-left:10px!important;overflow:visible!important}
         .ask-input-row .ask-textarea{min-width:80px}
         .ask-send-btn{background:linear-gradient(135deg,#b99cff,#8155ed);box-shadow:0 3px 14px rgba(139,92,246,.2);border-color:rgba(167,139,250,.5)!important}
+        .ask-header-regime{display:inline-flex;align-items:center;gap:8px;background:rgba(167,139,250,.09);border:1px solid rgba(167,139,250,.25);border-radius:999px;padding:8px 12px;color:var(--text-1);font:600 12px var(--font-sans);white-space:nowrap}
+        .ask-feature-icon{font-size:23px!important;line-height:1!important}
         .ask-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:10px 22px;flex-wrap:wrap}
         .ask-toolbar-actions{display:flex;align-items:center;gap:12px}
         .ask-market-note{display:inline-flex;align-items:center;gap:7px;color:var(--text-2);font:500 12px var(--font-sans)}
@@ -330,11 +332,11 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             title="Ask Volarix"
             subtitle="Explore markets, understand risk, and ask questions your way"
             page="ask"
-          />
+          ><span className="ask-header-regime" title="Current Volarix market regime"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></PageHeader>
 
           
 
-          <div className="ask-toolbar"><span className="ask-market-note"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></div></div>
+          <div className="ask-toolbar"><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div></div></div>
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
@@ -345,7 +347,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>What would you like to explore?</p>
                 </div>
-<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon"><Icon size={21} strokeWidth={1.8}/></span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon" aria-hidden="true">{item.emoji}</span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
               </div>
             )}
 
@@ -401,10 +403,9 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
       ) : (
         /* ── DESKTOP  */
         <div className="fade-up ask-redesign" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <PageHeader title="Ask Volarix" subtitle="Explore markets, understand risk, and ask questions your way" page="ask">
-  </PageHeader>
+          <PageHeader title="Ask Volarix" subtitle="Explore markets, understand risk, and ask questions your way" page="ask"><span className="ask-header-regime" title="Current Volarix market regime"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></PageHeader>
 
-          <div className="ask-toolbar"><span className="ask-market-note"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></div></div>
+          <div className="ask-toolbar"><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div></div></div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, paddingTop: 28 }}>
@@ -414,7 +415,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-1)', marginBottom: 5 }}>What would you like to explore?</p>
                 </div>
-<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon"><Icon size={21} strokeWidth={1.8}/></span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon" aria-hidden="true">{item.emoji}</span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
               </div>
             )}
 
