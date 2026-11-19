@@ -26,6 +26,61 @@ function useEndpoint(fetcher, deps = []) {
   return { data, loading, error, reload: load }
 }
 
+const BULLETIN_CACHE_KEY = 'volarix-bulletin-last-success-v1'
+const BULLETIN_RETRY_KEY = 'volarix-bulletin-retry-after-v1'
+const BULLETIN_COOLDOWN_MS = 60 * 60 * 1000
+
+function readStored(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null }
+}
+
+function useCachedBulletin() {
+  const [cached, setCached] = useState(() => readStored(BULLETIN_CACHE_KEY))
+  const [data, setData] = useState(() => readStored(BULLETIN_CACHE_KEY)?.data || null)
+  const [loading, setLoading] = useState(!readStored(BULLETIN_CACHE_KEY)?.data)
+  const [error, setError] = useState(null)
+  const [rateLimited, setRateLimited] = useState(false)
+  const [retryAfter, setRetryAfter] = useState(() => Number(localStorage.getItem(BULLETIN_RETRY_KEY)) || 0)
+
+  const reload = useCallback(async () => {
+    const blockedUntil = Number(localStorage.getItem(BULLETIN_RETRY_KEY)) || 0
+    if (Date.now() < blockedUntil) {
+      setRateLimited(true)
+      setRetryAfter(blockedUntil)
+      setLoading(false)
+      return
+    }
+    setLoading(!data)
+    setError(null)
+    try {
+      const res = await fetchBulletin()
+      setData(res.data)
+      const entry = { data: res.data, savedAt: Date.now() }
+      setCached(entry)
+      try { localStorage.setItem(BULLETIN_CACHE_KEY, JSON.stringify(entry)) } catch { /* storage unavailable */ }
+      try { localStorage.removeItem(BULLETIN_RETRY_KEY) } catch { /* storage unavailable */ }
+      setRateLimited(false)
+      setRetryAfter(0)
+    } catch (e) {
+      if (e?.response?.status === 429) {
+        const retryHeader = e.response?.headers?.['retry-after']
+        const parsedSeconds = Number(retryHeader)
+        const parsedDate = Date.parse(retryHeader)
+        const delay = retryHeader && Number.isFinite(parsedSeconds) ? Math.max(0,parsedSeconds * 1000) : Number.isFinite(parsedDate) ? Math.max(0,parsedDate - Date.now()) : BULLETIN_COOLDOWN_MS
+        const until = Date.now() + delay
+        setRetryAfter(until)
+        setRateLimited(true)
+        try { localStorage.setItem(BULLETIN_RETRY_KEY, String(until)) } catch { /* storage unavailable */ }
+        setError('AI report request limit reached.')
+      } else {
+        setError(e?.response?.data?.detail || e.message || 'Request failed')
+      }
+    } finally { setLoading(false) }
+  }, [data])
+
+  return { data, loading, error, reload, rateLimited, retryAfter, cachedAt: cached?.savedAt || null }
+}
+
 export default function useVolarix() {
   const [horizon,     setHorizon]     = useState(5)
   const [lastTick,    setLastTick]    = useState(Date.now())
@@ -38,7 +93,7 @@ export default function useVolarix() {
   const analogues = useEndpoint(() => fetchAnalogues(),      [])
   const shap      = useEndpoint(() => fetchShap(),           [])
   const backtest  = useEndpoint(() => fetchBacktest(),       [])
-  const bulletin  = useEndpoint(() => fetchBulletin(),       [])
+  const bulletin  = useCachedBulletin()
 
   useEffect(() => { latest.reload()    }, [lastTick])
   useEffect(() => { predict.reload()   }, [horizon, lastTick])
