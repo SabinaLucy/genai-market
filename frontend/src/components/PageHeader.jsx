@@ -96,12 +96,12 @@ export default function PageHeader({ title, subtitle, page, lastUpdated, regime,
             {isMobile ? timeAgo(lastUpdated) : `Updated ${timeAgo(lastUpdated)}`}
           </span>
         )}
-        {!isMobile && (
+        {!isMobile && page !== 'ask' && (
           <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
             🕐 {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
         )}
-        {regime && <RegimeBadge regime={regime} regimeLabel={regimeLabel} size="sm" />}
+        {regime && (page === 'ask' ? <span style={{display:'inline-flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:999,background:'rgba(167,139,250,.12)',border:'1px solid rgba(167,139,250,.32)',color:'var(--text-1)',fontFamily:'var(--font-sans)',fontSize:12,fontWeight:600,whiteSpace:'nowrap'}}><span style={{width:7,height:7,borderRadius:'50%',background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}} />{regime==='LOW'?'Stable market':regime==='ELEVATED'?'Elevated volatility':regime==='CRISIS'?'High volatility':'Market status'}</span> : <RegimeBadge regime={regime} regimeLabel={regimeLabel} size="sm" />)}
         {children}
       </div>
     </div>
