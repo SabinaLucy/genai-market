@@ -47,6 +47,10 @@ def _messages(body: AssistantRequest, attachment=None):
     content = [{"type": "text", "text": body.question}]
     if attachment:
         content.append(attachment)
+    # Claude requires alternating roles; merge a repeated user turn safely.
+    if history and history[-1]["role"] == "user":
+        previous = history.pop()["content"]
+        content.insert(0, {"type": "text", "text": previous})
     history.append({"role": "user", "content": content})
     return history
 
@@ -95,6 +99,14 @@ def attachment_from_upload(filename: str, content_type: str, data: bytes):
                     raise HTTPException(413, "Image dimensions too large")
         except (UnidentifiedImageError, OSError):
             raise HTTPException(400, "Invalid image file")
+        # Claude image inputs support JPEG, PNG, GIF, and WebP on compatible models.
+        # Normalize WebP/GIF to PNG for predictable vision behavior.
+        if kind in ("image/webp", "image/gif"):
+            with Image.open(io.BytesIO(data)) as im:
+                output = io.BytesIO()
+                im.convert("RGB").save(output, format="PNG")
+                data = output.getvalue()
+                kind = "image/png"
         return {"type": "image", "source": {"type": "base64", "media_type": kind, "data": base64.b64encode(data).decode("ascii")}}
     if kind == "application/pdf":
         if len(data) > MAX_PDF_BYTES:
