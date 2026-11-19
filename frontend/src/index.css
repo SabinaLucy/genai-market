@@ -369,3 +369,37 @@ body {
  :root.light .vol-market-explorer section button[style*="linear-gradient"]{color:#fff}
  :root.light .vol-market-explorer .vol-market-chat{background:#fff!important;color:#20162e!important}
 }
+
+/* Match Market Explorer's mobile light cards to the rest of the light UI. */
+@media (max-width:768px){
+ :root.light .vol-market-explorer section,
+ :root.light .vol-market-explorer section > div[style*="background"],
+ :root.light .vol-market-explorer section > div > div[style*="background"]{
+   background:linear-gradient(145deg,#fff 0%,#f7f2ff 100%)!important;
+   border-color:#ded2f3!important;
+   box-shadow:0 8px 24px rgba(71,43,124,.08)!important;
+   color:#241b35!important;
+ }
+ :root.light .vol-market-explorer section h3,
+ :root.light .vol-market-explorer section p,
+ :root.light .vol-market-explorer section span,
+ :root.light .vol-market-explorer section div{
+   color:#4c405f;
+ }
+ :root.light .vol-market-explorer section h3,
+ :root.light .vol-market-explorer section strong{
+   color:#241b35!important;
+ }
+ :root.light .vol-market-explorer section button{
+   background:#eee7fa!important;
+   border-color:#d7c7ef!important;
+   color:#4b336d!important;
+ }
+ :root.light .vol-market-explorer section button[style*="139, 92, 246"],
+ :root.light .vol-market-explorer section button[style*="#8b5cf6"]{
+   background:#8b5cf6!important;
+   color:#fff!important;
+ }
+ :root.light .vol-market-explorer section svg text{fill:#645474!important}
+ :root.light .vol-market-explorer section svg path[stroke="#b95aff"]{stroke:#8652d4}
+}
