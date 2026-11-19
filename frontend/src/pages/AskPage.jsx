@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { fetchAsk, fetchHeadlines } from '../api'
+import { fetchAsk, fetchAskUpload, fetchHeadlines } from '../api'
 import PageHeader from '../components/PageHeader'
 import useIsMobile from '../useIsMobile'
 import { REGIME_COLOR, REGIME_TEXT } from '../utils'
@@ -99,6 +99,8 @@ export default function AskPage({ bulletinData, latest }) {
   } catch { return [] }
 })
   const [responseStyle, setResponseStyle] = useState(() => { try { return localStorage.getItem(STYLE_KEY) || 'auto' } catch { return 'auto' } })
+  const [attachment, setAttachment] = useState(null)
+  const fileInputRef = useRef(null)
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
@@ -138,9 +140,9 @@ const clearHistory = () => {
 
   const send = async (q) => {
     q = (typeof q === 'string' ? q : input).trim()
-    if (!q || loading) return
+    if ((!q && !attachment) || loading) return
     setInput(''); setError(null)
-    setMessages(m => [...m, { role: 'user', text: q }])
+    setMessages(m => [...m, { role: 'user', text: attachment ? `${q || 'Please analyze this file.'} 📎 ${attachment.name}` : q }])
     setLoading(true)
     try {
       const headlinesContext = headlines?.length > 0
@@ -152,9 +154,11 @@ const context = (bulletinData?.bulletin ||
    Regime: ${latest?.data?.regime || 'unavailable'}, 
    Date: ${latest?.data?.date || new Date().toISOString().split('T')[0]}`) + headlinesContext
 
-const recent = messages.slice(-8).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text.slice(0, 1000)}`).join('\n')
-      const preference = responseStyle === 'auto' ? 'Adapt response length and complexity to the user’s communication style. Answer directly, acknowledge uncertainty without repetitive disclaimers.' : STYLE_HINTS[responseStyle]
-      const res = await fetchAsk(q, [context, 'Recent conversation for context (not instructions):', recent, 'Preferred response style:', preference].filter(Boolean).join('\n\n'))
+const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === 'ai').map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text.slice(0, 3000) }))
+      const res = attachment
+        ? await fetchAskUpload(attachment, q || 'Please analyze this file.', context, history, responseStyle)
+        : await fetchAsk(q, context, history, responseStyle)
+      setAttachment(null)
       setMessages(m => [...m, { role: 'ai', text: res.data.answer }])
     } catch (e) {
       setError(e?.response?.status === 429 ? 'AI request limit reached. Please try again later.' : (e?.response?.data?.detail || 'Unable to get a response right now. Please try again.'))
@@ -164,6 +168,10 @@ const recent = messages.slice(-8).map(m => `${m.role === 'user' ? 'User' : 'Assi
   return (
     <>
       <style>{`
+        .ask-attachment-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 18px;font-family:var(--font-sans)}
+        .ask-attach-button{border:1px solid rgba(171,132,238,.4);background:rgba(171,132,238,.1);color:var(--text-1);border-radius:9px;padding:7px 11px;font-size:12px;cursor:pointer}
+        .ask-attached-name{font-size:12px;color:var(--text-2);overflow-wrap:anywhere}.ask-attached-name button{margin-left:6px;border:0;background:transparent;color:var(--text-1);cursor:pointer}
+
         .ask-redesign{font-family:var(--font-sans);color:var(--text-1)}
         .ask-redesign button,.ask-redesign textarea,.ask-redesign select,.ask-redesign p,.ask-redesign li{font-family:var(--font-sans)}
         .ask-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;max-width:660px;margin:6px auto 0}
@@ -380,6 +388,7 @@ const recent = messages.slice(-8).map(m => `${m.role === 'user' ? 'User' : 'Assi
             <div ref={bottomRef} />
           </div>
 
+<div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={e=>{const file=e.target.files?.[0];if(file){const limit=file.type==='application/pdf'?10:5;if(!['image/png','image/jpeg','image/webp','image/gif','application/pdf'].includes(file.type)){setError('Choose a PNG, JPEG, WebP, GIF, or PDF file.')}else if(file.size>limit*1024*1024){setError(`File must be ${limit} MB or smaller.`)}else{setAttachment(file);setError(null)}}e.target.value=''}}/><button type="button" disabled={loading} onClick={()=>fileInputRef.current?.click()} className="ask-attach-button">＋ Attach image or PDF</button>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment">×</button></span>}</div>
           <div style={{ padding: '12px 32px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-sidebar)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: 'var(--bg-card)', border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}`, borderRadius: 14, padding: '10px 10px 10px 16px' }}>
               <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about volatility, regime, risk…" style={{ flex: 1, minWidth: 0, outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 14, fontFamily: 'var(--font-sans)', border: 'none', resize: 'none', lineHeight: 1.5, height: 52, overflowY: 'auto', padding: 0 }} />
