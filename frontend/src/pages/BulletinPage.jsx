@@ -7,7 +7,7 @@ export default function BulletinPage({ bulletin, latest }) {
     <div className="fade-up vi-page">
       <PageHeader title="AI Intelligence" subtitle="Market insights, uncertainty, and financial news" page="bulletin" regime={latest?.data?.regime} regimeLabel={latest?.data?.regime_label} />
       <div style={{ padding: '16px' }}>
-        <BulletinCard data={bulletin.data} loading={bulletin.loading} error={bulletin.error} onRetry={bulletin.reload} />
+        <BulletinCard data={bulletin.data} loading={bulletin.loading} error={bulletin.error} onRetry={bulletin.reload} rateLimited={bulletin.rateLimited} retryAfter={bulletin.retryAfter} cachedAt={bulletin.cachedAt} />
       </div>
     </div>
   )
