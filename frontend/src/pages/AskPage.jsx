@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Sparkles, MessageCircle, BookOpen, ChartNoAxesCombined, ChartColumnIncreasing, ShieldCheck, ChartLine, TrendingUp, ArrowUpRight, Camera, Image as ImageIcon, FileText, Plus, ChevronDown, Check, ArrowUp, X } from 'lucide-react'
 import { fetchAsk, fetchAskUpload, fetchHeadlines } from '../api'
 import PageHeader from '../components/PageHeader'
 import useIsMobile from '../useIsMobile'
@@ -21,7 +22,8 @@ const SUGGESTIONS_DESK = [
   { icon: '⚡', text: 'Is a spike likely in 5 days?' },
 ]
 
-const FEATURED = [{icon:'📊',label:'Market volatility',text:'What is driving volatility right now?'},{icon:'🛡️',label:'Understanding risk',text:'What does an elevated market regime mean?'},{icon:'📉',label:'Historical patterns',text:'How does today’s market compare to 2020?'},{icon:'✨',label:'Future outlook',text:'What could happen to volatility in the next five days?'}]
+const FEATURED = [{icon:ChartColumnIncreasing,label:'Market volatility',text:"What's moving the markets?",question:'What is driving volatility?'},{icon:ShieldCheck,label:'Understand risk',text:"Explore today's market regime",question:'Explain the current market regime'},{icon:ChartLine,label:'Historical patterns',text:'Compare with past market events',question:'How does today compare with 2020?'},{icon:TrendingUp,label:'Market outlook',text:'Explore potential scenarios',question:'What is the market outlook?'}]
+const STYLE_OPTIONS = [{value:'auto',label:'Adaptive',desc:'Adjusts naturally to you',icon:Sparkles},{value:'simple',label:'Simple',desc:'Easy explanations',icon:MessageCircle},{value:'detailed',label:'Detailed',desc:'More depth and context',icon:BookOpen},{value:'technical',label:'Technical',desc:'Advanced analysis',icon:ChartNoAxesCombined}]
 const STYLE_KEY = 'volarix-response-style'
 const STYLE_HINTS = {simple:'Use simple English suitable for a beginner.',detailed:'Give a thorough, clear explanation.',technical:'Use precise financial terminology and explain assumptions.'}
 function ShieldIcon({ color, size = 30 }) {
@@ -61,7 +63,7 @@ function formatResponse(text) {
         items.push(lines[i].replace(/^\d+\.\s/, '').trim()); i++
       }
       out.push(<ol key={`ol${i}`} style={{ paddingLeft: 18, margin: '5px 0', display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {items.map((t, j) => <li key={j} style={{ fontSize: 13, lineHeight: 1.65 }}>{inlineFmt(t)}</li>)}
+        {items.map((t, j) => <li key={j} style={{ fontSize: 14, lineHeight: 1.755 }}>{inlineFmt(t)}</li>)}
       </ol>)
       continue
     }
@@ -71,11 +73,11 @@ function formatResponse(text) {
         items.push(lines[i].replace(/^[-•*]\s/, '').trim()); i++
       }
       out.push(<ul key={`ul${i}`} style={{ paddingLeft: 18, margin: '5px 0', display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {items.map((t, j) => <li key={j} style={{ fontSize: 13, lineHeight: 1.65 }}>{inlineFmt(t)}</li>)}
+        {items.map((t, j) => <li key={j} style={{ fontSize: 14, lineHeight: 1.755 }}>{inlineFmt(t)}</li>)}
       </ul>)
       continue
     }
-    out.push(<p key={i} style={{ fontSize: 13, lineHeight: 1.75, margin: '3px 0' }}>{inlineFmt(line)}</p>)
+    out.push(<p key={i} style={{ fontSize: 14, lineHeight: 1.755, margin: '3px 0' }}>{inlineFmt(line)}</p>)
     i++
   }
   return out
@@ -101,6 +103,9 @@ export default function AskPage({ bulletinData, latest }) {
   const [responseStyle, setResponseStyle] = useState(() => { try { return localStorage.getItem(STYLE_KEY) || 'auto' } catch { return 'auto' } })
   const [attachment, setAttachment] = useState(null)
   const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
+  const [styleOpen,setStyleOpen] = useState(false)
+  const [attachOpen,setAttachOpen] = useState(false)
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
@@ -138,6 +143,17 @@ const clearHistory = () => {
   localStorage.removeItem(STORAGE_KEY)
 }
 
+  const handleFile = e => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const valid = ['image/png','image/jpeg','image/webp','image/gif','application/pdf']
+    const limit = file.type === 'application/pdf' ? 10 : 5
+    if (!valid.includes(file.type)) { setError('Choose a PNG, JPEG, WebP, GIF or PDF file.'); return }
+    if (file.size > limit * 1024 * 1024) { setError(`File must be ${limit} MB or smaller.`); return }
+    setAttachment(file); setError(null)
+  }
+
   const send = async (q) => {
     q = (typeof q === 'string' ? q : input).trim()
     if ((!q && !attachment) || loading) return
@@ -168,6 +184,20 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
   return (
     <>
       <style>{`
+        .ask-style-control{position:relative;z-index:10}
+        .ask-style-wrap,.ask-attach-wrap{position:relative}
+        .ask-style-pill{display:flex;align-items:center;gap:8px;background:rgba(168,126,238,.13);border:1px solid rgba(170,133,240,.4);border-radius:999px;padding:9px 13px;color:var(--text-1);cursor:pointer;font:500 13px var(--font-sans)}
+        .ask-style-pill svg,.ask-style-option svg,.ask-attach-menu svg{color:#b497f6}
+        .ask-style-menu,.ask-attach-menu{position:absolute;z-index:30;min-width:240px;padding:8px;background:var(--bg-sidebar);border:1px solid rgba(171,133,240,.4);border-radius:15px;box-shadow:0 18px 45px rgba(0,0,0,.28)}
+        .ask-style-menu{top:calc(100% + 8px);right:0}
+        .ask-attach-menu{bottom:calc(100% + 8px);left:0}
+        .ask-menu-heading{display:block;color:var(--text-3);font-size:10px;letter-spacing:.12em;padding:7px 10px}
+        .ask-style-option,.ask-attach-menu button{width:100%;display:flex;align-items:center;gap:11px;padding:10px;border:0;border-radius:10px;background:transparent;color:var(--text-1);cursor:pointer;text-align:left;font:13px var(--font-sans)}
+        .ask-style-option:hover,.ask-attach-menu button:hover,.ask-style-option.selected{background:rgba(166,125,233,.14)}
+        .ask-style-option>span{display:flex;flex-direction:column;flex:1;gap:3px}.ask-style-option small{color:var(--text-2);font-size:11px}
+        .ask-attachment-controls{padding:6px 12px!important}.ask-attach-button{display:flex;align-items:center;gap:6px;border-radius:10px!important;padding:8px 11px!important}
+        .ask-feature-icon{color:#b497f6}.ask-redesign .ask-feature-card{font-family:var(--font-sans)}
+
         .ask-attachment-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 18px;font-family:var(--font-sans)}
         .ask-attach-button{border:1px solid rgba(171,132,238,.4);background:rgba(171,132,238,.1);color:var(--text-1);border-radius:9px;padding:7px 11px;font-size:12px;cursor:pointer}
         .ask-attached-name{font-size:12px;color:var(--text-2);overflow-wrap:anywhere}.ask-attached-name button{margin-left:6px;border:0;background:transparent;color:var(--text-1);cursor:pointer}
@@ -276,7 +306,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
   </div>
 )}
 
-          <div className="ask-style-control"><span>Response style</span><select aria-label="Response style" value={responseStyle} onChange={e=>setResponseStyle(e.target.value)}><option value="auto">Auto</option><option value="simple">Simple</option><option value="detailed">Detailed</option><option value="technical">Technical</option></select></div>
+          <div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div>
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
@@ -287,7 +317,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>What would you like to explore?</p>
                 </div>
-<div className="ask-feature-grid">{FEATURED.map((item,i)=><button key={i} className="ask-feature-card" onClick={()=>send(item.text)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon">{item.icon}</span><span className="ask-feature-arrow">↗</span></span><strong>{item.label}</strong><span>{item.text}</span></button>)}</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon"><Icon size={21} strokeWidth={1.8}/></span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
               </div>
             )}
 
@@ -297,7 +327,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                   {m.role === 'user' ? <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <ShieldIcon color={color} size={18} />}
                 </div>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-ai'} style={{ padding: '10px 13px', maxWidth: '85%', color: 'var(--text-1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{m.text}</p>}
+                  {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>{m.text}</p>}
                 </div>
               </div>
             ))}
@@ -319,7 +349,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             <div ref={bottomRef} style={{ height: 4 }} />
           </div>
 
-          <div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={e=>{const file=e.target.files?.[0];if(file){const limit=file.type==='application/pdf'?10:5;if(!['image/png','image/jpeg','image/webp','image/gif','application/pdf'].includes(file.type)){setError('Choose a PNG, JPEG, WebP, GIF, or PDF file.')}else if(file.size>limit*1024*1024){setError(`File must be ${limit} MB or smaller.`)}else{setAttachment(file);setError(null)}}e.target.value=''}}/><button type="button" disabled={loading} onClick={()=>fileInputRef.current?.click()} className="ask-attach-button">＋ Attach image or PDF</button>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment">×</button></span>}</div>
+          <div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
           {/* Input — fixed at bottom, never moves */}
           <div className="ask-input-bar">
             <div className="ask-input-row" style={{ border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}` }}>
@@ -350,7 +380,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
   )}
 </PageHeader>
 
-          <div className="ask-style-control"><span>Response style</span><select aria-label="Response style" value={responseStyle} onChange={e=>setResponseStyle(e.target.value)}><option value="auto">Auto</option><option value="simple">Simple</option><option value="detailed">Detailed</option><option value="technical">Technical</option></select></div>
+          <div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, paddingTop: 28 }}>
@@ -360,7 +390,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-1)', marginBottom: 5 }}>What would you like to explore?</p>
                 </div>
-<div className="ask-feature-grid">{FEATURED.map((item,i)=><button key={i} className="ask-feature-card" onClick={()=>send(item.text)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon">{item.icon}</span><span className="ask-feature-arrow">↗</span></span><strong>{item.label}</strong><span>{item.text}</span></button>)}</div>
+<div className="ask-feature-grid">{FEATURED.map((item,i)=>{const Icon=item.icon;return <button key={i} className="ask-feature-card" onClick={()=>send(item.question)} disabled={loading}><span className="ask-feature-top"><span className="ask-feature-icon"><Icon size={21} strokeWidth={1.8}/></span><ArrowUpRight size={17} className="ask-feature-arrow"/></span><strong>{item.label}</strong><span>{item.text}</span></button>})}</div>
               </div>
             )}
 
@@ -370,7 +400,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
                   {m.role === 'user' ? <span style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: 'var(--font-sans)' }}>U</span> : <ShieldIcon color={color} size={20} />}
                 </div>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-ai'} style={{ padding: '12px 16px', maxWidth: '78%', color: 'var(--text-1)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0 }}>{m.text}</p>}
+                  {m.role === 'ai' ? formatResponse(m.text) : <p style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>{m.text}</p>}
                 </div>
               </div>
             ))}
@@ -390,7 +420,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             <div ref={bottomRef} />
           </div>
 
-<div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={e=>{const file=e.target.files?.[0];if(file){const limit=file.type==='application/pdf'?10:5;if(!['image/png','image/jpeg','image/webp','image/gif','application/pdf'].includes(file.type)){setError('Choose a PNG, JPEG, WebP, GIF, or PDF file.')}else if(file.size>limit*1024*1024){setError(`File must be ${limit} MB or smaller.`)}else{setAttachment(file);setError(null)}}e.target.value=''}}/><button type="button" disabled={loading} onClick={()=>fileInputRef.current?.click()} className="ask-attach-button">＋ Attach image or PDF</button>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment">×</button></span>}</div>
+<div className="ask-attachment-controls"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" style={{display:'none'}} onChange={handleFile}/><input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile}/><div className="ask-attach-wrap"><button type="button" className="ask-attach-button" onClick={()=>setAttachOpen(v=>!v)} disabled={loading}><Plus size={17}/> Attach</button>{attachOpen&&<div className="ask-attach-menu"><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><ImageIcon size={19}/><span>Upload image or chart</span></button><button onClick={()=>{setAttachOpen(false);cameraInputRef.current?.click()}}><Camera size={19}/><span>Take a photo</span></button><button onClick={()=>{setAttachOpen(false);fileInputRef.current?.click()}}><FileText size={19}/><span>Upload PDF</span></button></div>}</div>{attachment&&<span className="ask-attached-name">📎 {attachment.name}<button type="button" onClick={()=>setAttachment(null)} aria-label="Remove attachment"><X size={14}/></button></span>}</div>
           <div style={{ padding: '12px 32px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-sidebar)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: 'var(--bg-card)', border: `1.5px solid ${input ? `${color}70` : 'var(--border)'}`, borderRadius: 14, padding: '10px 10px 10px 16px' }}>
               <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about volatility, regime, risk…" style={{ flex: 1, minWidth: 0, outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 14, fontFamily: 'var(--font-sans)', border: 'none', resize: 'none', lineHeight: 1.5, height: 52, overflowY: 'auto', padding: 0 }} />
