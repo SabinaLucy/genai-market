@@ -327,3 +327,13 @@ body {
 .vol-side-bottom{margin-top:auto;padding:15px 6px 22px}.vol-side-promo{border:1px solid rgba(184,155,255,.35);border-radius:17px;padding:20px 16px;height:170px;position:relative;overflow:hidden;background:linear-gradient(140deg,rgba(155,128,245,.24),rgba(155,128,245,.06))}.vol-side-promo h3{font-size:19px;line-height:1.12;letter-spacing:-.04em}.vol-side-promo p{font-size:12px;margin-top:10px;color:var(--text-2)}.vol-promo-wave{position:absolute;bottom:-65px;right:-5px;font-size:190px;color:#b48bff;opacity:.25;line-height:1}
 .vol-side-theme{display:flex;justify-content:center;gap:8px;margin-top:20px;background:rgba(130,122,182,.16);border-radius:30px;padding:5px}.vol-side-theme button{flex:1;border:1px solid transparent;background:transparent;border-radius:25px;color:var(--text-2);font-size:19px;padding:5px;cursor:pointer}.vol-side-theme button.active{background:linear-gradient(135deg,#b7a0ff,#7453d8);color:white;border-color:rgba(255,255,255,.3);box-shadow:0 0 12px rgba(160,118,255,.45)}
 @media(max-width:768px){.vol-sidebar{display:none!important}}
+
+/* New navigation: keep all ten destinations reachable on shorter desktop screens. */
+.vol-sidebar .vol-side-nav { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; }
+.vol-sidebar .vol-side-nav > button { flex-shrink:0; }
+.vol-sidebar .vol-side-bottom { flex-shrink:0; }
+@media (max-height:780px) and (min-width:769px) {
+  .vol-sidebar .vol-side-nav { gap:3px; }
+  .vol-sidebar .vol-side-nav > button { padding-top:8px; padding-bottom:8px; }
+  .vol-sidebar .vol-side-promo { display:none; }
+}
