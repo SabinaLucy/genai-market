@@ -213,6 +213,13 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
         .ask-input-row{gap:10px!important;padding-left:10px!important;overflow:visible!important}
         .ask-input-row .ask-textarea{min-width:80px}
         .ask-send-btn{background:linear-gradient(135deg,#b99cff,#8155ed);box-shadow:0 3px 14px rgba(139,92,246,.2);border-color:rgba(167,139,250,.5)!important}
+        .ask-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:10px 22px;flex-wrap:wrap}
+        .ask-toolbar-actions{display:flex;align-items:center;gap:12px}
+        .ask-market-note{display:inline-flex;align-items:center;gap:7px;color:var(--text-2);font:500 12px var(--font-sans)}
+        .ask-market-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+        .ask-clear-history{background:transparent;border:1px solid var(--border);color:var(--text-2);font:500 12px var(--font-sans);border-radius:9px;padding:9px 12px;cursor:pointer;white-space:nowrap}
+        .ask-clear-history:hover:not(:disabled){border-color:#a78bfa;color:var(--text-1)}
+        .ask-clear-history:disabled{opacity:.45;cursor:not-allowed}
         .ask-style-control{position:relative;z-index:10}
         .ask-style-wrap,.ask-attach-wrap{position:relative}
         .ask-style-pill{display:flex;align-items:center;gap:8px;background:rgba(168,126,238,.13);border:1px solid rgba(170,133,240,.4);border-radius:999px;padding:9px 13px;color:var(--text-1);cursor:pointer;font:500 13px var(--font-sans)}
@@ -323,19 +330,11 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
             title="Ask Volarix"
             subtitle="Explore markets, understand risk, and ask questions your way"
             page="ask"
-            regime={regime}
-            regimeLabel={latest?.data?.regime_label}
           />
 
-          {messages.length > 0 && (
-  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 14px 0', background: 'var(--bg-app)' }}>
-    <button onClick={clearHistory} style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-sans)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>
-      Clear history
-    </button>
-  </div>
-)}
+          
 
-          <div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div>
+          <div className="ask-toolbar"><span className="ask-market-note"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></div></div>
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
@@ -402,15 +401,10 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
       ) : (
         /* ── DESKTOP  */
         <div className="fade-up ask-redesign" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <PageHeader title="Ask Volarix" subtitle="Explore markets, understand risk, and ask questions your way" page="ask" regime={regime} regimeLabel={latest?.data?.regime_label}>
-  {messages.length > 0 && (
-    <button onClick={clearHistory} style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-sans)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-      Clear history
-    </button>
-  )}
-</PageHeader>
+          <PageHeader title="Ask Volarix" subtitle="Explore markets, understand risk, and ask questions your way" page="ask">
+  </PageHeader>
 
-          <div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div>
+          <div className="ask-toolbar"><span className="ask-market-note"><span className="ask-market-dot" style={{background:regime==='CRISIS'?'#f87171':regime==='ELEVATED'?'#fbbf24':'#4ade80'}}/>{regime==='CRISIS'?'High volatility':regime==='ELEVATED'?'Elevated volatility':regime==='LOW'?'Stable market':'Market status'}</span><div className="ask-toolbar-actions"><div className="ask-style-control"><div className="ask-style-wrap"><button type="button" className="ask-style-pill" onClick={()=>setStyleOpen(v=>!v)} aria-expanded={styleOpen}><Sparkles size={15}/><span>{STYLE_OPTIONS.find(x=>x.value===responseStyle)?.label||'Adaptive'}</span><ChevronDown size={14}/></button>{styleOpen&&<div className="ask-style-menu"><span className="ask-menu-heading">RESPONSE STYLE</span>{STYLE_OPTIONS.map(option=>{const Icon=option.icon;return <button type="button" key={option.value} className={`ask-style-option ${responseStyle===option.value?'selected':''}`} onClick={()=>{setResponseStyle(option.value);setStyleOpen(false)}}><Icon size={18}/><span><strong>{option.label}</strong><small>{option.desc}</small></span>{responseStyle===option.value&&<Check size={16}/>}</button>})}</div>}</div></div><button type="button" className="ask-clear-history" onClick={clearHistory} disabled={messages.length===0} title={messages.length===0?'No conversation to clear':'Clear conversation history'}>Clear history</button></div></div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {messages.length === 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, paddingTop: 28 }}>
