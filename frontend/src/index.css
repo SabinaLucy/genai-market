@@ -583,3 +583,68 @@ body {
  .ask-mobile-compact .ask-feature-card{padding:6px 8px!important}
  .ask-mobile-compact .ask-feature-card>span:last-child{display:none!important}
 }
+
+
+/* Market Explorer desktop light mode: match the established mobile lavender palette.
+   Desktop-only; preserve mobile and dark mode behavior. */
+@media (min-width:769px) {
+ :root.light .vol-market-explorer {
+   --bg-app:#f7f5ff;--bg-card:#fff;--bg-card-2:#f2edff;
+   --text-1:#20162e;--text-2:#544865;--text-3:#655775;
+   --border:rgba(99,65,150,.22);
+   background:#f7f5ff!important;color:#20162e!important;
+ }
+ :root.light .vol-market-explorer .vol-market-stat-card {
+   background:linear-gradient(125deg,#fff,#eee7ff)!important;
+   border:1px solid #d7c5f0!important;
+   box-shadow:0 8px 24px rgba(71,43,124,.09)!important;
+ }
+ :root.light .vol-market-explorer .vol-market-stat-1 {background:linear-gradient(125deg,#fff,#f3e2ff)!important}
+ :root.light .vol-market-explorer .vol-market-stat-2 {background:linear-gradient(125deg,#fff,#e3f8ef)!important}
+ :root.light .vol-market-explorer .vol-market-stat-3 {background:linear-gradient(125deg,#fff9f0,#ffebce)!important}
+ :root.light .vol-market-explorer .vol-market-stat-card div,
+ :root.light .vol-market-explorer .vol-market-stat-card span {color:#514463!important}
+ :root.light .vol-market-explorer .vol-market-stat-card strong,
+ :root.light .vol-market-explorer .vol-market-stat-card div[style*="font-size: 27px"] {color:#241831!important}
+ :root.light .vol-market-explorer .vol-market-stat-3 strong {color:#a34a0b!important}
+ :root.light .vol-market-explorer section,
+ :root.light .vol-market-explorer section > div[style*="background"],
+ :root.light .vol-market-explorer section > div > div[style*="background"] {
+   background:linear-gradient(145deg,#fff,#f7f2ff)!important;
+   border-color:#ded2f3!important;
+   color:#241b35!important;
+   box-shadow:0 8px 24px rgba(71,43,124,.08)!important;
+ }
+ :root.light .vol-market-explorer section h2,
+ :root.light .vol-market-explorer section h3,
+ :root.light .vol-market-explorer section strong {color:#241b35!important}
+ :root.light .vol-market-explorer section p,
+ :root.light .vol-market-explorer section span {color:#544865}
+ :root.light .vol-market-explorer section svg text {fill:#645474!important}
+ :root.light .vol-market-explorer section button:not(.vol-calendar-day) {
+   border-color:#d7c7ef;color:#4b336d;
+ }
+ :root.light .vol-market-explorer .vol-market-monthly {
+   background:linear-gradient(145deg,#fff,#f8f4ff)!important;
+   border:1px solid #ded2f3!important;color:#241b35!important;
+ }
+ :root.light .vol-market-explorer .vol-market-chat {
+   background:#fff!important;color:#21172e!important;
+   border-color:#d9c8ef!important;
+ }
+ :root.light .vol-market-explorer .vol-market-chat h3 {color:#21172e!important}
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-suggestion {
+   background:#eee5f9!important;color:#291b3a!important;border-color:#d3bde9!important;
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-user {
+   background:#e5d4f4!important;color:#2d1b40!important;
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-ai {
+   background:#34204f!important;color:#fff!important;border-color:#69488d!important;
+   overflow-wrap:anywhere;line-height:1.65;
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-input {
+   background:#f1e8fa!important;color:#24172f!important;border-color:#d6bde9!important;
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-input::placeholder {color:#5b4b6b!important;opacity:1}
+}
