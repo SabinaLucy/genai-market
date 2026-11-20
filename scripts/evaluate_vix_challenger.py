@@ -64,7 +64,24 @@ def run(df, train_end="2022-12-31", val_end="2024-12-31"):
         truth = vix[origins[test] + h]
         baseline = vix[origins[test]]
         model_mae, baseline_mae = mae(pred, truth), mae(baseline, truth)
+        # Diagnose whether gains survive distinct calendar years, rather than
+        # hiding weak regimes behind a single pooled error statistic.
+        yearly = {}
+        test_years = dates[origins[test]].year
+        for year in sorted(set(test_years)):
+            mask = test_years == year
+            if mask.sum() < 20:
+                continue
+            ym = mae(pred[mask], truth[mask])
+            yb = mae(baseline[mask], truth[mask])
+            yearly[str(year)] = {
+                "samples": int(mask.sum()),
+                "challenger_mae": ym,
+                "persistence_mae": yb,
+                "improvement_pct": 100 * (yb - ym) / yb if yb else None,
+            }
         report["horizons"][str(h)] = {
+            "yearly_breakdown": yearly,
             "alpha": best_alpha, "validation_mae": best_val_mae,
             "test_samples": int(test.sum()), "challenger_mae": model_mae,
             "persistence_mae": baseline_mae,
