@@ -17,7 +17,7 @@ from src.modeling import LSTMModel
 HORIZONS = (1, 5, 10)
 SEQ = 60
 
-def run(csv, output, checkpoint, epochs=35):
+def run(csv, output, checkpoint, epochs=35, predictions="tmp/lstm_holdout_predictions.npz"):
     random.seed(42)
     np.random.seed(42)
     torch.manual_seed(42)
@@ -78,6 +78,7 @@ def run(csv, output, checkpoint, epochs=35):
     model.load_state_dict(best)
     model.eval()
     with torch.no_grad():
+        validation_prediction, _ = model(torch.from_numpy(X[val]))
         prediction, _ = model(torch.from_numpy(X[test]))
     pred = vix[origins[test],None] * np.exp(prediction.numpy())
     truth = np.stack([vix[origins[test]+h] for h in HORIZONS],axis=1)
@@ -90,6 +91,11 @@ def run(csv, output, checkpoint, epochs=35):
         b = float(np.mean(np.abs(baseline-truth[:,j])))
         report["horizons"][str(h)] = {"lstm_mae":m,"persistence_mae":b,
             "improvement_pct":100*(b-m)/b}
+    np.savez(predictions, val_origin_dates=dates[origins[val]].astype(str).to_numpy(),
+        test_origin_dates=dates[origins[test]].astype(str).to_numpy(),
+        val_predictions=vix[origins[val],None]*np.exp(validation_prediction.numpy()),
+        test_predictions=pred, val_truth=np.stack([vix[origins[val]+h] for h in HORIZONS],axis=1),
+        test_truth=truth, val_vix=vix[origins[val]], test_vix=baseline)
     Path(output).write_text(json.dumps(report,indent=2)+"\n")
     Path(checkpoint).parent.mkdir(parents=True,exist_ok=True)
     torch.save({"state_dict":best,"scale":scale,"features":"relative_log_vix",
@@ -102,5 +108,6 @@ if __name__ == "__main__":
     p.add_argument("--output",default="lstm_challenger_report.json")
     p.add_argument("--checkpoint",default="tmp/lstm_challenger.pt")
     p.add_argument("--epochs",type=int,default=35)
+    p.add_argument("--predictions",default="tmp/lstm_holdout_predictions.npz")
     a=p.parse_args()
-    run(a.csv,a.output,a.checkpoint,a.epochs)
+    run(a.csv,a.output,a.checkpoint,a.epochs,a.predictions)
