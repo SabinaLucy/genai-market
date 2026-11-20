@@ -3,6 +3,7 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'api/main.py'
       - 'scripts/evaluate_regime_ensemble.py'
       - 'scripts/build_ridge_release.py'
       - 'scripts/ridge_inference.py'
@@ -36,6 +37,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy pandas huggingface_hub
           pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify API and inference module syntax
+        run: python -m py_compile api/main.py scripts/ridge_inference.py scripts/build_ridge_release.py
       - name: Verify forecast target alignment
         env:
           PYTHONPATH: .
@@ -58,6 +61,12 @@ jobs:
         env:
           PYTHONPATH: scripts
         run: python scripts/build_ridge_release.py
+      - name: Publish staged Ridge bundle for release review
+        uses: actions/upload-artifact@v4
+        with:
+          name: volarix-ridge-staging-bundle
+          path: tmp/vix_ridge_staging.joblib
+          if-no-files-found: error
       - name: Download original public LSTM checkpoint
         run: |
           mkdir -p models
