@@ -432,3 +432,80 @@ body {
  :root.light .vol-market-explorer .vol-market-monthly span{color:#514665!important}
  :root.light .vol-market-explorer .vol-market-monthly strong{color:#241b35!important}
 }
+
+/* Premium animated mobile Market Explorer and legible Ask Volarix. */
+@media(max-width:768px){
+ .vol-market-explorer{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif!important}
+ :root.light .vol-market-explorer{--text-1:#21172e;--text-2:#33263e;--text-3:#51435d}
+ :root.light .vol-market-explorer section p,
+ :root.light .vol-market-explorer section span,
+ :root.light .vol-market-explorer section button:not(.vol-calendar-day),
+ :root.light .vol-market-explorer .vol-market-monthly p,
+ :root.light .vol-market-explorer .vol-market-monthly span{color:#33263e!important}
+ :root.light .vol-market-explorer section h3,
+ :root.light .vol-market-explorer section strong{color:#21172e!important}
+ :root.light .vol-market-explorer .vol-market-stat-card{
+   isolation:isolate;
+   background:linear-gradient(125deg,#fff,#e9ddff,#f9f5ff,#fff)!important;
+   background-size:260% 260%!important;
+   animation:vol-card-drift 10s ease-in-out infinite alternate;
+   border:1px solid #cbb4f5!important;
+   box-shadow:inset 0 1px 0 #fff,0 9px 24px rgba(89,52,150,.12)!important;
+   transition:transform .22s ease,box-shadow .22s ease;
+ }
+ :root.light .vol-market-explorer .vol-market-stat-1{
+   background:linear-gradient(125deg,#fff,#f0d9ff,#f9f0ff,#fff)!important;background-size:260% 260%!important;border-color:#dec1ef!important
+ }
+ :root.light .vol-market-explorer .vol-market-stat-2{
+   background:linear-gradient(125deg,#fff,#d5f5e9,#edfff7,#fff)!important;background-size:260% 260%!important;border-color:#b1e4d1!important
+ }
+ :root.light .vol-market-explorer .vol-market-stat-3{
+   background:linear-gradient(125deg,#fff9f0,#ffdbad,#fff0d8,#fff9f0)!important;background-size:260% 260%!important;border-color:#f0bd77!important
+ }
+ :root.light .vol-market-explorer .vol-market-stat-card div,
+ :root.light .vol-market-explorer .vol-market-stat-card span{color:#2a2035!important}
+ :root.light .vol-market-explorer .vol-market-stat-3 div[style*="font-size: 27px"]{color:#a34a0b!important}
+ .vol-market-stat-card:active{transform:scale(.985)}
+ .vol-market-stat-card::before{
+   content:"";position:absolute;inset:-70%;pointer-events:none;z-index:-1;
+   background:linear-gradient(115deg,transparent 43%,rgba(255,255,255,.26) 49%,transparent 56%);
+   animation:vol-card-shimmer 11s ease-in-out infinite;
+ }
+ :root.light .vol-market-explorer .vol-market-chat{
+   background:#fff!important;color:#21172e!important;
+   border-color:#d9c8ef!important;
+   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif!important
+ }
+ :root.light .vol-market-explorer .vol-market-chat h3{color:#21172e!important}
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-suggestion{
+   background:#eee5f9!important;color:#291b3a!important;border-color:#d3bde9!important
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-user{
+   background:#e5d4f4!important;color:#2d1b40!important
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-ai{
+   background:#34204f!important;color:#fff!important;border-color:#69488d!important;
+   overflow-wrap:anywhere;line-height:1.65
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-input{
+   background:#f1e8fa!important;color:#24172f!important;border-color:#d6bde9!important
+ }
+ :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-input::placeholder{color:#5b4b6b!important;opacity:1}
+ .vol-market-chat{min-height:0!important}
+ .vol-market-chat>div:nth-child(2){min-height:0;overflow-y:auto!important}
+ .ask-mobile-compact .ask-feature-card{padding:11px!important;gap:5px!important;min-height:0!important}
+ .ask-mobile-compact .ask-feature-icon{width:30px!important;height:30px!important;font-size:17px!important}
+ .ask-mobile-compact .ask-feature-card strong{font-size:12px!important}
+ .ask-mobile-compact .ask-feature-card>span:last-child{font-size:12px!important;line-height:1.35!important}
+ .ask-mobile-compact .ask-feature-grid{gap:8px!important;margin-top:0!important}
+ .ask-mobile-compact .ask-toolbar{padding:5px 12px!important}
+ .ask-mobile-compact .ask-messages{min-height:0}
+ .ask-mobile-compact .ask-messages>div{padding-top:10px!important}
+ .ask-mobile-compact .ask-messages>div>div:first-child{gap:9px!important;padding-top:8px!important}
+ .ask-mobile-compact .ask-input-bar{padding-top:7px!important}
+}
+@keyframes vol-card-drift{from{background-position:0% 45%}to{background-position:100% 55%}}
+@keyframes vol-card-shimmer{0%,62%{transform:translateX(-70%)}90%,100%{transform:translateX(70%)}}
+@media(prefers-reduced-motion:reduce){
+ .vol-market-stat-card,.vol-market-stat-card::before{animation:none!important;transition:none!important}
+}
