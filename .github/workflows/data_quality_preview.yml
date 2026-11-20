@@ -1,6 +1,11 @@
 name: Preview FRED and sentiment data quality (no deployment)
 
 on:
+  pull_request:
+    paths:
+      - 'scripts/repair_macro_history.py'
+      - 'scripts/audit_sentiment_freshness.py'
+      - '.github/workflows/data_quality_preview.yml'
   workflow_dispatch:
 
 permissions:
