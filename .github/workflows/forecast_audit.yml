@@ -3,6 +3,7 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/evaluate_feature_ablation.py'
       - 'scripts/compare_forecast_models.py'
       - 'scripts/train_lstm_challenger.py'
       - 'scripts/evaluate_vix_challenger.py'
@@ -44,6 +45,8 @@ jobs:
         env:
           PYTHONPATH: .
         run: python scripts/train_lstm_challenger.py --epochs 35
+      - name: Evaluate verified sentiment feature ablation
+        run: python scripts/evaluate_feature_ablation.py
       - name: Compare LSTM and Ridge on identical held-out dates
         run: python scripts/compare_forecast_models.py
       - name: Download original public LSTM checkpoint
@@ -75,4 +78,5 @@ jobs:
             vix_challenger_report.json
             lstm_challenger_report.json
             model_comparison.json
+            feature_ablation_report.json
           if-no-files-found: warn
