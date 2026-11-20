@@ -325,7 +325,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
 
       {isMobile ? (
         /* ── MOBILE: fully fixed layout, nothing scrolls except messages ── */
-        <div className="ask-page-mobile ask-redesign">
+        <div className="ask-page-mobile ask-redesign ask-mobile-compact">
 
           {/* Header — fixed at top */}
           <PageHeader
