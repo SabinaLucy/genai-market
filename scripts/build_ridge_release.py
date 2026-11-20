@@ -33,8 +33,10 @@ def build(csv, output):
     Path(output).parent.mkdir(parents=True,exist_ok=True)
     joblib.dump(bundle,output)
     restored=joblib.load(output)
+    from ridge_inference import latest_ridge_features
+    live_features=latest_ridge_features(df)
     for h in HORIZONS:
-        pred=float(vix[-1]*np.exp(restored["models"][h].predict(X[-1:])[0]))
+        pred=float(vix[-1]*np.exp(restored["models"][h].predict(live_features)[0]))
         if not np.isfinite(pred) or pred<=0:
             raise RuntimeError(f"Invalid staged prediction for {h}")
     print(json.dumps({"status":"staged_not_deployed","last_training_date":bundle["last_training_date"],
