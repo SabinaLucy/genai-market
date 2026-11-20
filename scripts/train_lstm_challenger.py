@@ -91,6 +91,7 @@ def run(csv, output, checkpoint, epochs=35, predictions="tmp/lstm_holdout_predic
         b = float(np.mean(np.abs(baseline-truth[:,j])))
         report["horizons"][str(h)] = {"lstm_mae":m,"persistence_mae":b,
             "improvement_pct":100*(b-m)/b}
+    Path(predictions).parent.mkdir(parents=True,exist_ok=True)
     np.savez(predictions, val_origin_dates=dates[origins[val]].astype(str).to_numpy(),
         test_origin_dates=dates[origins[test]].astype(str).to_numpy(),
         val_predictions=vix[origins[val],None]*np.exp(validation_prediction.numpy()),
