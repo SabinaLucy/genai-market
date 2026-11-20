@@ -278,9 +278,12 @@ def main():
             if 'sentiment_source' in df.columns:
                 df.loc[latest_market_day, 'sentiment_source'] = 'finbert'
 
-    # Recalculate from the earliest inserted date. Also repair the existing
-    # last row, which previously copied stale log/return/regime values.
-    first_changed = min(new_dates) if new_dates else df.index.max()
+    # Repair the entire model input window, including existing rows preceding
+    # a backfill. Recomputing only newly inserted rows leaves stale derived
+    # values immediately before the gap (and can contaminate inference).
+    # The 21 extra rows provide an audit buffer for the longest VIX lag.
+    audit_start = df.index[max(0, len(df) - 81)]
+    first_changed = min(min(new_dates), audit_start) if new_dates else audit_start
     df = update_derived_features(df, first_changed)
 
     # Validate before replacing the on-disk dataset.
@@ -294,6 +297,38 @@ def main():
     for col in ('vix', 'vix_log', 'vix_return', 'regime_label'):
         if col in df.columns and df.loc[first_changed:, col].isna().any():
             raise RuntimeError(f'Invalid calculated field: {col}')
+
+    # Validate all derived VIX inputs used by the latest 60-step LSTM window.
+    recent = df.tail(60)
+    v = pd.to_numeric(df['vix'], errors='coerce')
+    expected = {
+        'vix_log': np.log(v),
+        'vix_lag1': v.shift(1),
+        'vix_lag5': v.shift(5),
+        'vix_lag21': v.shift(21),
+        'vix_roll_mean5': v.rolling(5).mean(),
+        'vix_roll_std21': v.rolling(21).std(),
+    }
+    for col, values in expected.items():
+        if col in recent:
+            actual = pd.to_numeric(recent[col], errors='coerce').to_numpy()
+            target = values.loc[recent.index].to_numpy()
+            if not np.allclose(actual, target, rtol=1e-5, atol=1e-5, equal_nan=False):
+                raise RuntimeError(f'Invalid recent {col}: refusing to publish inconsistent LSTM inputs')
+    if 'regime_label' in recent:
+        expected_regime = np.select(
+            [recent['vix'] < 20, recent['vix'] < 30],
+            ['LOW', 'ELEVATED'], default='CRISIS',
+        )
+        if not np.array_equal(recent['regime_label'].to_numpy(), expected_regime):
+            raise RuntimeError('Invalid recent regime_label: refusing to publish')
+
+    # Carried sentiment is not independently observed daily sentiment.
+    # Keep its provenance visible instead of silently treating it as measured.
+    if 'sentiment_source' in recent:
+        carried = int((recent['sentiment_source'] == 'forward_fill').sum())
+        if carried:
+            print(f'  WARNING: {carried}/60 recent sentiment rows are forward-filled; forecast quality may suffer')
 
     # Make the run idempotent: unchanged files must not trigger HF deployments.
     tmp = CSV.with_suffix('.csv.tmp')

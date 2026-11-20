@@ -1,0 +1,101 @@
+name: Forecast repair audit (manual, no deployment)
+
+on:
+  pull_request:
+    paths:
+      - 'api/main.py'
+      - 'scripts/evaluate_regime_ensemble.py'
+      - 'scripts/build_ridge_release.py'
+      - 'scripts/ridge_inference.py'
+      - 'scripts/evaluate_feature_ablation.py'
+      - 'scripts/compare_forecast_models.py'
+      - 'scripts/train_lstm_challenger.py'
+      - 'scripts/evaluate_vix_challenger.py'
+      - 'src/modeling.py'
+      - 'tests/test_forecast_horizons.py'
+      - 'scripts/audit_forecasts.py'
+      - 'scripts/update_master_df.py'
+      - '.github/workflows/forecast_audit.yml'
+      - 'models/lstm_config.json'
+      - 'data/processed/master_df.csv'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install audit dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas huggingface_hub
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify API and inference module syntax
+        run: python -m py_compile api/main.py scripts/ridge_inference.py scripts/build_ridge_release.py
+      - name: Verify forecast target alignment
+        env:
+          PYTHONPATH: .
+        run: python -m unittest discover -s tests -p 'test_forecast_horizons.py' -v
+      - name: Evaluate leakage-safe VIX-only challenger
+        run: |
+          pip install scikit-learn
+          python scripts/evaluate_vix_challenger.py --output vix_challenger_report.json
+      - name: Train and evaluate corrected LSTM challenger (not deployed)
+        env:
+          PYTHONPATH: .
+        run: python scripts/train_lstm_challenger.py --epochs 35
+      - name: Evaluate verified sentiment feature ablation
+        run: python scripts/evaluate_feature_ablation.py
+      - name: Evaluate regime-aware Ridge LSTM ensemble
+        run: python scripts/evaluate_regime_ensemble.py
+      - name: Compare LSTM and Ridge on identical held-out dates
+        run: python scripts/compare_forecast_models.py
+      - name: Build staging-only Ridge bundle and test latest inference
+        env:
+          PYTHONPATH: scripts
+        run: python scripts/build_ridge_release.py
+      - name: Publish staged Ridge bundle for release review
+        uses: actions/upload-artifact@v4
+        with:
+          name: volarix-ridge-staging-bundle
+          path: tmp/vix_ridge_staging.joblib
+          if-no-files-found: error
+      - name: Download original public LSTM checkpoint
+        run: |
+          mkdir -p models
+          python - <<'PY'
+          from huggingface_hub import hf_hub_download
+          import shutil
+          source = hf_hub_download(repo_id="SabinaLucy/volarix-models", filename="lstm_model.pt")
+          shutil.copyfile(source, "models/lstm_model.pt")
+          PY
+      - name: Evaluate original LSTM on all three horizons
+        env:
+          PYTHONPATH: .
+        run: |
+          python scripts/audit_forecasts.py \
+            --csv data/processed/master_df.csv \
+            --weights models/lstm_model.pt \
+            --config models/lstm_config.json \
+            --test-start 2023-01-01 \
+            --output forecast_audit.json
+      - name: Publish audit report (not model weights)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: volarix-three-horizon-audit
+          path: |
+            forecast_audit.json
+            vix_challenger_report.json
+            lstm_challenger_report.json
+            model_comparison.json
+            feature_ablation_report.json
+            regime_ensemble_report.json
+          if-no-files-found: warn
