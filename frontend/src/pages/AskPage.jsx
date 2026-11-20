@@ -340,7 +340,7 @@ const history = messages.slice(-8).filter(m => m.role === 'user' || m.role === '
           {/* Messages — only this scrolls */}
           <div className="ask-messages" style={{ padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingTop: 16 }}>
+              <div className="ask-mobile-welcome" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingTop: 16 }}>
                 <div style={{ width: 60, height: 60, borderRadius: 16, background: `${color}15`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <VolarixLogo collapsed />
                 </div>
