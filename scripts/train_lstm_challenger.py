@@ -92,8 +92,8 @@ def run(csv, output, checkpoint, epochs=35, predictions="tmp/lstm_holdout_predic
         report["horizons"][str(h)] = {"lstm_mae":m,"persistence_mae":b,
             "improvement_pct":100*(b-m)/b}
     Path(predictions).parent.mkdir(parents=True,exist_ok=True)
-    np.savez(predictions, val_origin_dates=dates[origins[val]].astype(str).to_numpy(),
-        test_origin_dates=dates[origins[test]].astype(str).to_numpy(),
+    np.savez(predictions, val_origin_dates=dates[origins[val]].to_numpy(dtype="datetime64[D]").astype(str),
+        test_origin_dates=dates[origins[test]].to_numpy(dtype="datetime64[D]").astype(str),
         val_predictions=vix[origins[val],None]*np.exp(validation_prediction.numpy()),
         test_predictions=pred, val_truth=np.stack([vix[origins[val]+h] for h in HORIZONS],axis=1),
         test_truth=truth, val_vix=vix[origins[val]], test_vix=baseline)
