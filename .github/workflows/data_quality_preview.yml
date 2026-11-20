@@ -3,6 +3,7 @@ name: Preview FRED and sentiment data quality (no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/prepare_forecast_data.py'
       - 'scripts/repair_macro_history.py'
       - 'scripts/audit_sentiment_freshness.py'
       - '.github/workflows/data_quality_preview.yml'
@@ -31,6 +32,8 @@ jobs:
         run: |
           test -n "$FRED_API_KEY" || { echo "FRED_API_KEY missing"; exit 1; }
           python scripts/repair_macro_history.py --days 370 --write --output macro_repair_preview.csv
+      - name: Create cleaned forecasting dataset preview
+        run: python scripts/prepare_forecast_data.py --csv macro_repair_preview.csv --output forecast_data_repair_preview.csv
       - name: Upload reports only
         if: always()
         uses: actions/upload-artifact@v4
@@ -39,4 +42,5 @@ jobs:
           path: |
             sentiment_quality_report.csv
             macro_repair_preview.csv
+            forecast_data_repair_preview.csv
           if-no-files-found: warn
