@@ -30,6 +30,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.modeling import LSTMModel, VIXDataset, predict
+from scripts.ridge_inference import latest_ridge_features
 from src.analogues import get_analogues, format_analogues_for_bulletin
 from src.explainability import load_explainability_cache, get_top_drivers
 from src.backtesting import run_full_backtest
@@ -174,6 +175,7 @@ def _vix_to_regime(vix: float) -> str:
 # App state
 
 class AppState:
+    ridge_bundle    : Any          = None
     lstm_model      : LSTMModel    = None
     lstm_config     : dict         = None
     regime_clf      : Any          = None
@@ -217,6 +219,17 @@ async def lifespan(app: FastAPI):
     state.test_df = state.master_df[test_mask].copy()
     state.latest_vix_date = str(state.master_df.index[-1].date())
     print(f"  master_df        {time.time()-t:.1f}s  ({len(state.master_df)} rows)")
+
+    # Ridge is opt-in until its validated release artifact is available in the Space.
+    ridge_path = os.getenv("VOLARIX_RIDGE_BUNDLE", "models/vix_ridge_release.joblib")
+    if os.path.isfile(ridge_path):
+        candidate = joblib.load(ridge_path)
+        if candidate.get("feature_spec") != "evaluate_vix_challenger.make_examples:v1" or set(candidate.get("models", {})) != set(HORIZONS):
+            raise RuntimeError("Invalid Ridge release bundle")
+        state.ridge_bundle = candidate
+        print(f"  Ridge             loaded from {ridge_path}")
+    else:
+        print(f"  Ridge             unavailable ({ridge_path}); legacy LSTM remains active")
 
     t = time.time()
     scaler_path = hub_download("scaler.pkl")
@@ -388,6 +401,20 @@ def _lstm_predict_latest(horizon: int = 5) -> dict:
     }
 
 
+def _forecast_latest(horizon: int) -> dict:
+    """Use validated Ridge bundle when present; never reuse LSTM uncertainty for Ridge."""
+    if state.ridge_bundle is None:
+        return {**_lstm_predict_latest(horizon), "model": "legacy_lstm", "interval_status": "legacy_lstm_calibration"}
+    features = latest_ridge_features(state.master_df)
+    current = float(state.master_df["vix"].iloc[-1])
+    forecast = float(current * np.exp(state.ridge_bundle["models"][horizon].predict(features)[0]))
+    if not np.isfinite(forecast) or forecast <= 0:
+        raise ValueError("Invalid Ridge forecast")
+    return {"predicted_vix": round(forecast, 2), "interval_lo": None, "interval_hi": None,
+            "confidence_pct": None, "hat_q_raw": None, "hat_q_clamped": False,
+            "model": "ridge_vix_only", "interval_status": "not_calibrated"}
+
+
 def _regime_predict_latest() -> dict:
     feat_vec = state.master_df[state.clf_feature_cols].iloc[-1].values.reshape(1, -1)
     proba    = state.regime_clf.predict_proba(feat_vec)[0]
@@ -415,6 +442,7 @@ def health():
     return safe_json({
         "status"         : "ok",
         "models_loaded"  : state.lstm_model is not None,
+        "forecast_model" : "ridge_vix_only" if state.ridge_bundle is not None else "legacy_lstm",
         "latest_vix_date": state.latest_vix_date,
         "uptime_seconds" : uptime,
         "startup_seconds": round(state.startup_time, 1) if state.startup_time else None,
@@ -429,6 +457,7 @@ def models_meta():
         raise HTTPException(503, "Models not yet loaded")
     return safe_json({
         "lstm"     : {k: v for k, v in state.lstm_config.items() if k not in ("horizon_weights",)},
+        "forecast_model": "ridge_vix_only" if state.ridge_bundle is not None else "legacy_lstm",
         "features" : FEATURE_COLS,
         "horizons" : HORIZONS,
         "repo_id"  : HF_REPO_ID,
@@ -482,7 +511,7 @@ def predict_endpoint(req: PredictRequest):
     if state.lstm_model is None:
         raise HTTPException(503, "Model not loaded")
     try:
-        lstm_out    = _lstm_predict_latest(req.horizon)
+        lstm_out    = _forecast_latest(req.horizon)
         regime_out  = _regime_predict_latest()
         _, latest_date = _get_latest_feature_vector()
         current_vix = float(state.master_df["vix"].iloc[-1])
@@ -496,6 +525,8 @@ def predict_endpoint(req: PredictRequest):
             "horizon_days"        : req.horizon,
             "current_vix"         : round(current_vix, 2),
             "predicted_vix"       : lstm_out["predicted_vix"],
+            "model"               : lstm_out["model"],
+            "interval_status"     : lstm_out["interval_status"],
             "direction"           : direction,
             "interval_lo"         : lstm_out["interval_lo"],
             "interval_hi"         : lstm_out["interval_hi"],
@@ -517,11 +548,11 @@ def bulletin(request: Request):
         raise HTTPException(503, "Model not loaded")
     try:
         horizon     = 5
-        lstm_out    = _lstm_predict_latest(horizon)
+        lstm_out    = _forecast_latest(horizon)
         reg_out     = _regime_predict_latest()
         feat_vec, latest_date = _get_latest_feature_vector()
         current_vix = float(state.master_df["vix"].iloc[-1])
-        attn_w      = np.array(lstm_out["attn_weights"])
+        attn_w      = np.array(lstm_out["attn_weights"]) if "attn_weights" in lstm_out else None
 
         analogues = get_analogues(
             current_vector    = feat_vec,
@@ -547,6 +578,8 @@ def bulletin(request: Request):
             "horizon_days"        : horizon,
             "current_vix"         : round(current_vix, 2),
             "predicted_vix"       : lstm_out["predicted_vix"],
+            "model"               : lstm_out["model"],
+            "interval_status"     : lstm_out["interval_status"],
             "interval_lo"         : lstm_out["interval_lo"],
             "interval_hi"         : lstm_out["interval_hi"],
             "confidence_pct"      : lstm_out["confidence_pct"],
