@@ -30,7 +30,7 @@ def audit_data(df: pd.DataFrame) -> dict:
         raise ValueError("Dates must be unique and sorted")
     if len(df) < SEQUENCE_LENGTH + max(HORIZONS) + 2:
         raise ValueError("Not enough history for a 60-day window and 10-day targets")
-    missing = set(FEATURE_COLS) | {"vix", "vix_log"} - set(df.columns)
+    missing = (set(FEATURE_COLS) | {"vix", "vix_log"}) - set(df.columns)
     if missing:
         raise ValueError(f"Missing columns: {sorted(missing)}")
     numeric = df[list(FEATURE_COLS) + ["vix", "vix_log"]].apply(pd.to_numeric, errors="coerce")
@@ -68,7 +68,7 @@ def audit_data(df: pd.DataFrame) -> dict:
     }
 
 
-def evaluate(df: pd.DataFrame, model, device: str) -> dict:
+def evaluate(df: pd.DataFrame, model, device: str, test_start: str) -> dict:
     import torch
 
     # At origin i, use exactly the last 60 observations ending at i.
@@ -76,6 +76,9 @@ def evaluate(df: pd.DataFrame, model, device: str) -> dict:
     features = df[list(FEATURE_COLS)].to_numpy(dtype=np.float32)
     vix = df["vix"].to_numpy(dtype=np.float64)
     origins = np.arange(SEQUENCE_LENGTH - 1, len(df) - max(HORIZONS))
+    origins = origins[df.index[origins] >= pd.Timestamp(test_start)]
+    if len(origins) == 0:
+        raise ValueError("No held-out samples for requested test period")
     windows = np.stack([features[i - SEQUENCE_LENGTH + 1:i + 1] for i in origins])
     predictions = []
     model.eval()
@@ -84,6 +87,9 @@ def evaluate(df: pd.DataFrame, model, device: str) -> dict:
             out, _ = model(torch.from_numpy(batch).to(device))
             predictions.append(np.exp(out.cpu().numpy()))
     pred = np.concatenate(predictions)
+    with torch.no_grad():
+        latest_out, _ = model(torch.from_numpy(features[-SEQUENCE_LENGTH:][None]).to(device))
+        latest_forecasts = np.exp(latest_out.cpu().numpy()[0])
     result = {}
     for j, h in enumerate(HORIZONS):
         truth = vix[origins + h]
@@ -98,9 +104,7 @@ def evaluate(df: pd.DataFrame, model, device: str) -> dict:
             "lstm_directional_accuracy_pct": float(
                 100 * np.mean(np.sign(forecast - baseline) == np.sign(truth - baseline))
             ),
-            "latest_forecast": float(np.exp(
-                model(torch.from_numpy(features[-SEQUENCE_LENGTH:][None]).to(device))[0][0, j].detach().cpu()
-            )),
+            "latest_forecast": float(latest_forecasts[j]),
         }
     return result
 
@@ -111,6 +115,7 @@ def main():
     parser.add_argument("--weights", default=None)
     parser.add_argument("--config", default="models/lstm_config.json")
     parser.add_argument("--output", default=None)
+    parser.add_argument("--test-start", default="2023-01-01")
     args = parser.parse_args()
 
     df = pd.read_csv(args.csv, index_col=0, parse_dates=True).sort_index()
@@ -130,7 +135,7 @@ def main():
             n_horizons=config["n_horizons"],
         ).to(device)
         model.load_state_dict(torch.load(args.weights, map_location=device, weights_only=True))
-        report["horizon_evaluation"] = evaluate(df, model, device)
+        report["horizon_evaluation"] = evaluate(df, model, device, args.test_start)
     print(json.dumps(report, indent=2))
     if args.output:
         Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
