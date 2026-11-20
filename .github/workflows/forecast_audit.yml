@@ -1,0 +1,46 @@
+name: Forecast repair audit (manual, no deployment)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install audit dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas torch --index-url https://download.pytorch.org/whl/cpu
+          pip install huggingface_hub
+      - name: Download original public LSTM checkpoint
+        run: |
+          mkdir -p models
+          python - <<'PY'
+          from huggingface_hub import hf_hub_download
+          import shutil
+          source = hf_hub_download(repo_id="SabinaLucy/volarix-models", filename="lstm_model.pt")
+          shutil.copyfile(source, "models/lstm_model.pt")
+          PY
+      - name: Evaluate original LSTM on all three horizons
+        run: |
+          python scripts/audit_forecasts.py \
+            --csv data/processed/master_df.csv \
+            --weights models/lstm_model.pt \
+            --config models/lstm_config.json \
+            --test-start 2023-01-01 \
+            --output forecast_audit.json
+      - name: Publish audit report (not model weights)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: volarix-three-horizon-audit
+          path: forecast_audit.json
+          if-no-files-found: warn
