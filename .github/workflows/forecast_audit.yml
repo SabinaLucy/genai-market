@@ -37,6 +37,8 @@ jobs:
           shutil.copyfile(source, "models/lstm_model.pt")
           PY
       - name: Evaluate original LSTM on all three horizons
+        env:
+          PYTHONPATH: .
         run: |
           python scripts/audit_forecasts.py \
             --csv data/processed/master_df.csv \
