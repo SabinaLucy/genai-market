@@ -648,3 +648,20 @@ body {
  }
  :root.light .vol-market-explorer .vol-market-chat .vol-market-chat-input::placeholder {color:#5b4b6b!important;opacity:1}
 }
+
+/* Market Explorer light mode: desktop text matches readable mobile labels. */
+@media(min-width:769px){
+ :root.light .vol-market-explorer section p,
+ :root.light .vol-market-explorer section span{color:#33263e!important}
+ :root.light .vol-market-explorer section h3,
+ :root.light .vol-market-explorer section strong{color:#21172e!important}
+ :root.light .vol-market-explorer section button:not(.vol-calendar-day){color:#33263e!important}
+ :root.light .vol-market-explorer section button[style*="#8b5cf6"]{color:#fff!important}
+}
+
+/* Preserve bright text in dark chart tooltips on all light-mode screen sizes. */
+:root.light .vol-market-explorer section svg text[fill="white"],
+:root.light .vol-market-explorer section svg text[fill="#ffffff"],
+:root.light .vol-market-explorer section svg text[fill="#f0b8ff"]{
+ fill:#fff!important;
+}
