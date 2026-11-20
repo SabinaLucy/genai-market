@@ -19,12 +19,10 @@ def build(csv, output):
     report=run(df)
     X,Y,origins,vix,dates=make_examples(df)
     models={}
+    from ridge_inference import latest_ridge_features
     for j,h in enumerate(HORIZONS):
         alpha=report["horizons"][str(h)]["alpha"]
-        # Each horizon trains on every origin with a completed target.
-        eligible=origins+h<len(df)
-        model=make_pipeline(StandardScaler(),Ridge(alpha=alpha))
-        model.fit(X[eligible],Y[eligible,j])
+        # Include the final h-specific completed labels, which the shared 10-day\n        # comparison split deliberately excludes for shorter horizons.\n        full_origins=np.arange(59,len(df)-h)\n        full_X=np.vstack([latest_ridge_features(df.iloc[:i+1])[0] for i in full_origins])\n        full_Y=np.log(vix[full_origins+h]/vix[full_origins])\n        model=make_pipeline(StandardScaler(),Ridge(alpha=alpha))\n        model.fit(full_X,full_Y)
         models[h]=model
     bundle={"models":models,"horizons":list(HORIZONS),
             "last_training_date":str(df.index[-1].date()),
@@ -33,7 +31,6 @@ def build(csv, output):
     Path(output).parent.mkdir(parents=True,exist_ok=True)
     joblib.dump(bundle,output)
     restored=joblib.load(output)
-    from ridge_inference import latest_ridge_features
     live_features=latest_ridge_features(df)
     for h in HORIZONS:
         pred=float(vix[-1]*np.exp(restored["models"][h].predict(live_features)[0]))
