@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const PAGES = [['overview','Overview'],['regime','Regime Analysis'],['bulletin','AI Intelligence'],['ask','Ask Volarix'],['backtest','Backtesting'],['about','About Volarix'],['market','Market Explorer'],['research','Research Lab'],['workspace','My Workspace'],['settings','Settings']]
+const PAGES = [['overview','Overview'],['regime','Regime Analysis'],['bulletin','AI Intelligence'],['ask','Ask Volarix'],['backtest','Backtesting'],['about','About Volarix'],['market','Market Explorer'],['workspace','My Workspace'],['settings','Settings']]
 const METRICS = [['total_return','Total return'],['ann_return','Annual return'],['sharpe_ratio','Sharpe ratio'],['max_drawdown','Maximum drawdown'],['ann_volatility','Annual volatility']]
 const STRATEGIES = [['spy_stats','SPY Buy & Hold'],['naive_stats','Naive Switch'],['hyst_stats','Hysteresis']]
 const EXPLAIN = {

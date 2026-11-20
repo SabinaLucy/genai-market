@@ -15,7 +15,7 @@ import AskPage       from './pages/AskPage'
 import BacktestPage  from './pages/BacktestPage'
 import AboutPage     from './pages/AboutPage'
 import IntelligenceWorkspace from './components/IntelligenceWorkspace'
-import { MarketExplorer, ResearchLab, WorkspacePage, SettingsPage, NewFeatureTheme } from './pages/ExpansionPages'
+import { MarketExplorer, WorkspacePage, SettingsPage, NewFeatureTheme } from './pages/ExpansionPages'
 
 export default function App() {
   const isMobile = useIsMobile()
@@ -78,8 +78,7 @@ export default function App() {
     backtest: <BacktestPage backtest={backtest} />,
     about:    <AboutPage />,
     market: <NewFeatureTheme><MarketExplorer latest={latest} analogues={analogues} /></NewFeatureTheme>,
-    research: <NewFeatureTheme><ResearchLab predict={predict} shap={shap} backtest={backtest} /></NewFeatureTheme>,
-    workspace: <NewFeatureTheme><WorkspacePage latest={latest} predict={predict} backtest={backtest} /></NewFeatureTheme>,
+    workspace: <NewFeatureTheme><WorkspacePage latest={latest} predict={predict} backtest={backtest} bulletin={bulletin} onNav={setPage} /></NewFeatureTheme>,
     settings: <NewFeatureTheme><SettingsPage /></NewFeatureTheme>,
   }
 

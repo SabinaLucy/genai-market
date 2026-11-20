@@ -9,9 +9,8 @@ const NAV = [
 ]
 const EXTRA = [
   ['market','Market Explorer','Historical VIX, stress calendar and events','◈'],
-  ['research','Research Lab','Historical patterns and research','◇'],
   ['backtest','Backtesting','Strategy performance','◎'],
-  ['workspace','My Workspace','Saved research tools','▦'],
+  ['workspace','My Workspace','Personal market dashboard','▦'],
   ['about','About Volarix','How the platform works','ⓘ'],
   ['settings','Settings','Preferences and appearance','⚙'],
 ]
