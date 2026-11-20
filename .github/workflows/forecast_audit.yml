@@ -3,6 +3,8 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/build_ridge_release.py'
+      - 'scripts/ridge_inference.py'
       - 'scripts/evaluate_feature_ablation.py'
       - 'scripts/compare_forecast_models.py'
       - 'scripts/train_lstm_challenger.py'
@@ -49,6 +51,10 @@ jobs:
         run: python scripts/evaluate_feature_ablation.py
       - name: Compare LSTM and Ridge on identical held-out dates
         run: python scripts/compare_forecast_models.py
+      - name: Build staging-only Ridge bundle and test latest inference
+        env:
+          PYTHONPATH: scripts
+        run: python scripts/build_ridge_release.py
       - name: Download original public LSTM checkpoint
         run: |
           mkdir -p models
