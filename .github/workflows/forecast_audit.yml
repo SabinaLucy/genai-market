@@ -3,6 +3,7 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/evaluate_vix_challenger.py'
       - 'src/modeling.py'
       - 'tests/test_forecast_horizons.py'
       - 'scripts/audit_forecasts.py'
@@ -33,6 +34,10 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m unittest discover -s tests -p 'test_forecast_horizons.py' -v
+      - name: Evaluate leakage-safe VIX-only challenger
+        run: |
+          pip install scikit-learn
+          python scripts/evaluate_vix_challenger.py --output vix_challenger_report.json
       - name: Download original public LSTM checkpoint
         run: |
           mkdir -p models
@@ -57,5 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: volarix-three-horizon-audit
-          path: forecast_audit.json
+          path: |
+            forecast_audit.json
+            vix_challenger_report.json
           if-no-files-found: warn
