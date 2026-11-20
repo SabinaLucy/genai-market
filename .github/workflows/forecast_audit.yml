@@ -3,6 +3,7 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/evaluate_regime_ensemble.py'
       - 'scripts/build_ridge_release.py'
       - 'scripts/ridge_inference.py'
       - 'scripts/evaluate_feature_ablation.py'
@@ -49,6 +50,8 @@ jobs:
         run: python scripts/train_lstm_challenger.py --epochs 35
       - name: Evaluate verified sentiment feature ablation
         run: python scripts/evaluate_feature_ablation.py
+      - name: Evaluate regime-aware Ridge LSTM ensemble
+        run: python scripts/evaluate_regime_ensemble.py
       - name: Compare LSTM and Ridge on identical held-out dates
         run: python scripts/compare_forecast_models.py
       - name: Build staging-only Ridge bundle and test latest inference
@@ -85,4 +88,5 @@ jobs:
             lstm_challenger_report.json
             model_comparison.json
             feature_ablation_report.json
+            regime_ensemble_report.json
           if-no-files-found: warn
