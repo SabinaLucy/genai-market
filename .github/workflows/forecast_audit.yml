@@ -3,6 +3,8 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'src/modeling.py'
+      - 'tests/test_forecast_horizons.py'
       - 'scripts/audit_forecasts.py'
       - 'scripts/update_master_df.py'
       - '.github/workflows/forecast_audit.yml'
@@ -27,6 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy pandas huggingface_hub
           pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Verify forecast target alignment
+        env:
+          PYTHONPATH: .
+        run: python -m unittest discover -s tests -p 'test_forecast_horizons.py' -v
       - name: Download original public LSTM checkpoint
         run: |
           mkdir -p models
