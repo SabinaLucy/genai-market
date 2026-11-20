@@ -3,6 +3,7 @@ name: Preview FRED and sentiment data quality (no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/validate_forecast_data.py'
       - 'scripts/prepare_forecast_data.py'
       - 'scripts/repair_macro_history.py'
       - 'scripts/audit_sentiment_freshness.py'
@@ -34,6 +35,8 @@ jobs:
           python scripts/repair_macro_history.py --days 370 --write --output macro_repair_preview.csv
       - name: Create cleaned forecasting dataset preview
         run: python scripts/prepare_forecast_data.py --csv macro_repair_preview.csv --output forecast_data_repair_preview.csv
+      - name: Validate repaired dataset before publishing artifacts
+        run: python scripts/validate_forecast_data.py
       - name: Upload reports only
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,4 +46,5 @@ jobs:
             sentiment_quality_report.csv
             macro_repair_preview.csv
             forecast_data_repair_preview.csv
+            forecast_data_integrity.json
           if-no-files-found: warn
