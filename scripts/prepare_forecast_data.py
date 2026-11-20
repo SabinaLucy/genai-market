@@ -12,8 +12,7 @@ def clean(df):
     if "sentiment_source" not in df:
         raise ValueError("sentiment_source missing: cannot establish provenance")
     source=df["sentiment_source"].fillna("").astype(str).str.lower()
-    stale=source.isin(["forward_fill","ffill","carried","stale"])
-    df["sentiment_observed"]=~stale & pd.to_numeric(df["sentiment"],errors="coerce").notna()
+    df["sentiment_observed"]=source.eq("finbert") & pd.to_numeric(df["sentiment"],errors="coerce").notna()
     df.loc[~df["sentiment_observed"],"sentiment"]=np.nan
     return df
 
