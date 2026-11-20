@@ -40,8 +40,8 @@ def mae(pred, truth):
 
 def run(df, train_end="2022-12-31", val_end="2024-12-31"):
     X, Y, origins, vix, dates = make_examples(df)
-    train = dates[origins] <= pd.Timestamp(train_end)
-    val = (dates[origins] > pd.Timestamp(train_end)) & (dates[origins] <= pd.Timestamp(val_end))
+    train = dates[origins + max(HORIZONS)] <= pd.Timestamp(train_end)
+    val = (dates[origins] > pd.Timestamp(train_end)) & (dates[origins + max(HORIZONS)] <= pd.Timestamp(val_end))
     test = dates[origins] > pd.Timestamp(val_end)
     if min(train.sum(), val.sum(), test.sum()) < 100:
         raise ValueError("Each chronological split needs at least 100 examples")
