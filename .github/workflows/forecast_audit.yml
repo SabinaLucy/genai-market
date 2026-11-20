@@ -1,6 +1,13 @@
 name: Forecast repair audit (manual, no deployment)
 
 on:
+  pull_request:
+    paths:
+      - 'scripts/audit_forecasts.py'
+      - 'scripts/update_master_df.py'
+      - '.github/workflows/forecast_audit.yml'
+      - 'models/lstm_config.json'
+      - 'data/processed/master_df.csv'
   workflow_dispatch:
 
 permissions:
