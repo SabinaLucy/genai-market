@@ -3,6 +3,7 @@ name: Forecast repair audit (manual, no deployment)
 on:
   pull_request:
     paths:
+      - 'scripts/compare_forecast_models.py'
       - 'scripts/train_lstm_challenger.py'
       - 'scripts/evaluate_vix_challenger.py'
       - 'src/modeling.py'
@@ -43,6 +44,8 @@ jobs:
         env:
           PYTHONPATH: .
         run: python scripts/train_lstm_challenger.py --epochs 35
+      - name: Compare LSTM and Ridge on identical held-out dates
+        run: python scripts/compare_forecast_models.py
       - name: Download original public LSTM checkpoint
         run: |
           mkdir -p models
@@ -71,4 +74,5 @@ jobs:
             forecast_audit.json
             vix_challenger_report.json
             lstm_challenger_report.json
+            model_comparison.json
           if-no-files-found: warn
