@@ -11,6 +11,7 @@ on:
       - 'scripts/compare_forecast_models.py'
       - 'scripts/train_lstm_challenger.py'
       - 'scripts/evaluate_vix_challenger.py'
+      - 'scripts/benchmark_forecasters.py'
       - 'src/modeling.py'
       - 'tests/test_forecast_horizons.py'
       - 'scripts/audit_forecasts.py'
@@ -45,8 +46,12 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_forecast_horizons.py' -v
       - name: Evaluate leakage-safe VIX-only challenger
         run: |
-          pip install scikit-learn
+          pip install scikit-learn xgboost lightgbm
           python scripts/evaluate_vix_challenger.py --output vix_challenger_report.json
+      - name: Run common chronological model benchmark (research only)
+        env:
+          PYTHONPATH: scripts
+        run: python scripts/benchmark_forecasters.py --output forecast_common_benchmark.json
       - name: Train and evaluate corrected LSTM challenger (not deployed)
         env:
           PYTHONPATH: .
@@ -93,6 +98,7 @@ jobs:
           name: volarix-three-horizon-audit
           path: |
             forecast_audit.json
+            forecast_common_benchmark.json
             vix_challenger_report.json
             lstm_challenger_report.json
             model_comparison.json
