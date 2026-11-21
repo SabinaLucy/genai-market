@@ -1,129 +1,202 @@
-"""Chronological VIX-only forecasting benchmark. Research only; never deploys.
+"""Single-run, research-only VIX hybrid selection audit.
 
-All candidates share identical forecast origins, horizon-specific labels and
-train/validation/test boundaries. Test targets are observed, never imputed.
+All features use VIX observed at or before the origin. No deployment or model
+artifact is produced. 2025+ is held out until candidates and blend weights
+are selected on 2023-24 validation. Walk-forward years are diagnostics, not
+an excuse to tune against the final holdout.
 """
 import argparse
 import json
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from evaluate_vix_challenger import HORIZONS, make_examples
+HORIZONS = (1, 5, 10)
+REGIMES = ("LOW", "ELEVATED", "CRISIS")
+LAGS = (1, 2, 4, 9, 19, 39, 59)
+SEED = 42
 
 
-def candidate_factories():
-    models = {
-        "ridge": lambda: make_pipeline(StandardScaler(), Ridge(alpha=10.0)),
-        "har_ridge": lambda: make_pipeline(StandardScaler(), Ridge(alpha=10.0)),
-        "hist_gradient_boosting": lambda: HistGradientBoostingRegressor(
-            max_iter=150, max_leaf_nodes=15, learning_rate=0.05,
-            min_samples_leaf=25, random_state=42),
-    }
-    try:
-        from xgboost import XGBRegressor
-        models["xgboost"] = lambda: XGBRegressor(
-            n_estimators=200, max_depth=3, learning_rate=0.04,
-            subsample=0.9, colsample_bytree=0.9, objective="reg:squarederror",
-            n_jobs=2, random_state=42)
-    except ImportError:
-        pass
-    try:
-        from lightgbm import LGBMRegressor
-        models["lightgbm"] = lambda: LGBMRegressor(
-            n_estimators=200, num_leaves=15, learning_rate=0.04,
-            min_child_samples=25, verbosity=-1, n_jobs=2, random_state=42)
-    except ImportError:
-        pass
-    return models
+def features(frame):
+    frame = frame.sort_index()
+    if frame.index.has_duplicates:
+        raise ValueError("Duplicate dates")
+    v = pd.to_numeric(frame["vix"], errors="coerce").to_numpy(float)
+    if not np.isfinite(v).all() or np.any(v <= 0):
+        raise ValueError("Invalid VIX observations")
+    logv = np.log(v)
+    origins = np.arange(59, len(v) - max(HORIZONS))
+    x, extended = [], []
+    for i in origins:
+        cur = v[i]
+        recent = v[i-59:i+1]
+        log_recent = logv[i-59:i+1]
+        basic = [np.log(v[i-lag]/cur) for lag in LAGS] + [
+            np.log(cur), np.log(np.mean(v[i-4:i+1])/cur),
+            np.log(np.mean(v[i-19:i+1])/cur),
+            np.std(logv[i-19:i+1], ddof=1)]
+        # No current-week look-ahead: all windows end at origin i.
+        stats = [np.log(np.mean(recent[-n:])/cur) for n in (3, 10, 40, 60)]
+        stats += [np.std(np.diff(log_recent[-n:]), ddof=1) for n in (6, 11, 21, 41)]
+        stats += [logv[i] - logv[i-n] for n in (1, 3, 5, 10, 20)]
+        stats += [float((cur - np.min(recent[-20:])) /
+                        max(np.max(recent[-20:]) - np.min(recent[-20:]), 1e-6))]
+        x.append(basic)
+        extended.append(basic + stats)
+    y = np.stack([logv[origins+h] - logv[origins] for h in HORIZONS], axis=1)
+    return np.array(x), np.array(extended), y, origins, v, frame.index
 
 
-def metrics(actual, predicted):
-    err = np.asarray(predicted) - np.asarray(actual)
-    return {"mae": float(np.mean(np.abs(err))),
-            "rmse": float(np.sqrt(np.mean(err ** 2)))}
+def error(y, p):
+    return {"mae": float(np.mean(np.abs(y-p))),
+            "rmse": float(np.sqrt(np.mean((y-p)**2)))}
 
 
-def run(frame, train_end="2022-12-31", val_end="2024-12-31"):
-    X, Y, origins, vix, dates = make_examples(frame)
-    train = dates[origins + max(HORIZONS)] <= pd.Timestamp(train_end)
-    validation = ((dates[origins] > pd.Timestamp(train_end)) &
-                  (dates[origins + max(HORIZONS)] <= pd.Timestamp(val_end)))
-    test = dates[origins] > pd.Timestamp(val_end)
-    if min(train.sum(), validation.sum(), test.sum()) < 100:
-        raise ValueError("Insufficient samples in chronological split")
-    # HAR-style features: level and short/medium rolling relative VIX means.
-    # This is a HAR-inspired benchmark, not a conventional HAR-RV model.
-    har_columns = [7, 8, 9, 10]
-    factories = candidate_factories()
-    result = {"splits": {"train": int(train.sum()),
-                         "validation": int(validation.sum()),
-                         "test": int(test.sum())},
-              "models": {}, "notes": [
-                  "Research only. No deployment.",
-                  "Model hyperparameters are provisional, not tuned on test.",
-                  "Regimes use origin VIX: LOW <20, ELEVATED 20-30, CRISIS >=30.",
-                  "2025-2026 is a shared final holdout; no walk-forward refits yet.",
-                  "Corrected LSTM requires a separate identical-split run."]}
-    for horizon_index, h in enumerate(HORIZONS):
-        # Targets for every evaluated origin must be observed by the evaluation cutoff.
-        origin_test = origins[test]
-        observed = vix[origin_test + h]
-        current = vix[origin_test]
-        regimes = np.where(current < 20, "LOW",
-                           np.where(current < 30, "ELEVATED", "CRISIS"))
-        horizon_result = {"persistence": {"overall": metrics(observed, current)}}
-        for name, factory in factories.items():
-            features = X[:, har_columns] if name == "har_ridge" else X
-            # Fit only on train and validation; no test observations used.
-            model = factory()
-            model.fit(features[train | validation], Y[train | validation, horizon_index])
-            forecast = current * np.exp(model.predict(features[test]))
-            if not np.isfinite(forecast).all():
-                raise ValueError(f"Non-finite predictions from {name}")
-            report = {"overall": metrics(observed, forecast),
-                      "regimes": {}, "years": {}}
-            for regime in ("LOW", "ELEVATED", "CRISIS"):
-                mask = regimes == regime
-                report["regimes"][regime] = {
-                    "samples": int(mask.sum()),
-                    **(metrics(observed[mask], forecast[mask]) if mask.any() else {})}
-            years = dates[origin_test].year
-            for year in sorted(set(years)):
-                mask = years == year
-                report["years"][str(year)] = {
-                    "samples": int(mask.sum()),
-                    **metrics(observed[mask], forecast[mask])}
-            horizon_result[name] = report
-        # Also report baseline by regime and calendar year for fair comparison.
-        baseline = horizon_result["persistence"]
-        baseline["regimes"] = {
-            regime: {"samples": int((regimes == regime).sum()),
-                     **(metrics(observed[regimes == regime], current[regimes == regime])
-                        if (regimes == regime).any() else {})}
-            for regime in ("LOW", "ELEVATED", "CRISIS")}
-        years = dates[origin_test].year
-        baseline["years"] = {
-            str(year): {"samples": int((years == year).sum()),
-                        **metrics(observed[years == year], current[years == year])}
-            for year in sorted(set(years))}
-        result["models"][str(h)] = horizon_result
-    return result
+def fit_ridge(x, y, mask, alpha):
+    model = make_pipeline(StandardScaler(), Ridge(alpha=alpha))
+    model.fit(x[mask], y[mask])
+    return model
+
+
+def mean_reversion(v, origins, horizon, speed, target_window):
+    # Calibrated parameters are chosen exclusively on validation.
+    target = np.array([np.median(v[max(0, i-target_window+1):i+1])
+                       for i in origins])
+    return target + (v[origins]-target)*np.exp(-speed*horizon)
+
+
+def regime(v):
+    return np.where(v < 20, "LOW", np.where(v < 30, "ELEVATED", "CRISIS"))
+
+
+def evaluate(y, pred, origin_vix):
+    regimes = regime(origin_vix)
+    out = {"overall": error(y, pred), "regimes": {}}
+    for label in REGIMES:
+        mask = regimes == label
+        out["regimes"][label] = {"samples": int(mask.sum()),
+            **(error(y[mask], pred[mask]) if mask.any() else {})}
+    return out
+
+
+def candidates(x, ext, y, origins, v, train, predict_mask, hidx, alphas,
+               rev_speeds, rev_windows):
+    h = HORIZONS[hidx]
+    origin_vix = v[origins[predict_mask]]
+    truth = v[origins[predict_mask]+h]
+    forecasts = {"persistence": origin_vix.copy()}
+    # Ridge candidates are trained on origin-aligned log changes.
+    for alpha in alphas:
+        for name, xx in (("ridge", x), ("enhanced_ridge", ext),
+                         ("har_style", ext[:, [7,8,9,10,11,12,13,14]])):
+            model = fit_ridge(xx, y[:,hidx], train, alpha)
+            forecasts[f"{name}_a{alpha}"] = origin_vix * np.exp(
+                np.clip(model.predict(xx[predict_mask]), -2, 2))
+    for speed in rev_speeds:
+        for window in rev_windows:
+            forecasts[f"mean_reversion_s{speed}_w{window}"] = mean_reversion(
+                v, origins[predict_mask], h, speed, window)
+    return truth, origin_vix, forecasts
+
+
+def run(frame):
+    x, ext, y, origins, v, dates = features(frame)
+    train = np.asarray(dates[origins+10] <= pd.Timestamp("2022-12-31"))
+    val = np.asarray((dates[origins] > pd.Timestamp("2022-12-31")) &
+                     (dates[origins+10] <= pd.Timestamp("2024-12-31")))
+    test = np.asarray(dates[origins] > pd.Timestamp("2024-12-31"))
+    if min(train.sum(), val.sum(), test.sum()) < 100:
+        raise ValueError("Insufficient train/validation/test samples")
+    report = {"status": "research_only_not_deployable",
+        "splits": {k: int(m.sum()) for k,m in
+                   (("train",train),("validation",val),("test",test))},
+        "selection": {}, "walk_forward": {}, "limitations": [
+          "2025+ is a final untouched holdout for model selection.",
+          "Crisis holdout is small; report sample counts and avoid claims of reliability.",
+          "HAR-style uses VIX levels and statistics, not realized variance.",
+          "Mean reversion target is rolling historical median, never future data.",
+          "No prediction intervals are calibrated or production model deployed.",
+          "Walk-forward folds are diagnostics; they are not independent of the earlier training years.",
+          "Model candidates use only verified VIX, not stale sentiment or mixed-unit macro."]}
+    alphas = (0.1, 10.0, 100.0)
+    speeds = (0.02, 0.08, 0.2)
+    windows = (20, 60, 252)
+    for j,h in enumerate(HORIZONS):
+        val_truth, val_vix, vp = candidates(
+            x,ext,y,origins,v,train,val,j,alphas,speeds,windows)
+        # Choose a base candidate by validation MAE; ties favor simpler Ridge.
+        ranking = sorted(vp, key=lambda k: (
+            error(val_truth,vp[k])["mae"],
+            0 if k.startswith("ridge_") else 1, k))
+        base = ranking[0]
+        # A predeclared blend family: validation-only weights, no regime tuning
+        # when there are too few validation samples for that regime.
+        ridge_keys = [k for k in ranking if k.startswith("ridge_")]
+        stat_keys = [k for k in ranking if k.startswith("mean_reversion_") or
+                     k.startswith("har_style_")]
+        best_ridge = ridge_keys[0]
+        best_stat = stat_keys[0]
+        blends = {}
+        for weight in (0.25, 0.5, 0.75):
+            key = f"blend_ridge_{weight}"
+            blends[key] = weight*vp[best_ridge] + (1-weight)*vp[best_stat]
+        choices = {**vp, **blends}
+        selected = min(choices, key=lambda k: error(val_truth,choices[k])["mae"])
+        # Refit learned models on train+validation, preserving selected parameters.
+        combined = train | val
+        test_truth, test_vix, tp = candidates(
+            x,ext,y,origins,v,combined,test,j,alphas,speeds,windows)
+        for weight in (0.25,0.5,0.75):
+            tp[f"blend_ridge_{weight}"] = (
+                weight*tp[best_ridge] + (1-weight)*tp[best_stat])
+        report["selection"][str(h)] = {
+            "selected_on_validation": selected,
+            "validation_mae": error(val_truth, choices[selected])["mae"],
+            "validation_regime_counts": {
+                r: int((regime(val_vix)==r).sum()) for r in REGIMES},
+            "best_ridge": best_ridge, "best_statistical": best_stat,
+            "test": {name: evaluate(test_truth, tp[name], test_vix)
+                     for name in ("persistence", best_ridge, best_stat, selected)
+                     if name in tp},
+            "test_origin_regime_counts": {
+                r: int((regime(test_vix)==r).sum()) for r in REGIMES}}
+        # Earlier independent-origin chronological folds. Never choose the
+        # final candidate by their scores; this is a robustness diagnostic.
+        folds = {}
+        for year in (2016, 2018, 2020, 2022, 2023, 2024):
+            cutoff = pd.Timestamp(f"{year-1}-12-31")
+            fold_train = np.asarray(dates[origins+10] <= cutoff)
+            fold_test = np.asarray((dates[origins] >= pd.Timestamp(f"{year}-01-01")) &
+                                  (dates[origins+10] <= pd.Timestamp(f"{year}-12-31")))
+            if fold_train.sum() < 250 or fold_test.sum() < 50:
+                continue
+            truth, current, pred = candidates(
+                x,ext,y,origins,v,fold_train,fold_test,j,
+                alphas,speeds,windows)
+            if selected.startswith("blend_"):
+                w = float(selected.split("_")[-1])
+                pred[selected] = w*pred[best_ridge]+(1-w)*pred[best_stat]
+            folds[str(year)] = {
+                "samples": int(fold_test.sum()),
+                "selected": evaluate(truth,pred[selected],current),
+                "persistence": evaluate(truth,pred["persistence"],current)}
+        report["walk_forward"][str(h)] = folds
+    return report
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--csv", default="data/processed/master_df.csv")
-    parser.add_argument("--output", default="forecast_common_benchmark.json")
-    args = parser.parse_args()
-    frame = pd.read_csv(args.csv, index_col=0, parse_dates=True).sort_index()
-    report = run(frame)
-    Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps({"status": "research_only", "splits": report["splits"],
-                      "models": list(report["models"]["1"].keys()),
-                      "output": args.output}, indent=2))
+    p = argparse.ArgumentParser()
+    p.add_argument("--csv", default="data/processed/master_df.csv")
+    p.add_argument("--output", default="forecast_common_benchmark.json")
+    args = p.parse_args()
+    df = pd.read_csv(args.csv, index_col=0, parse_dates=True).sort_index()
+    result = run(df)
+    Path(args.output).write_text(json.dumps(result,indent=2)+"\n")
+    print(json.dumps({"status": result["status"], "splits": result["splits"],
+        "selection": {h: {"model": v["selected_on_validation"],
+                         "test_mae": v["test"][v["selected_on_validation"]]["overall"]["mae"],
+                         "crisis_samples": v["test_origin_regime_counts"]["CRISIS"]}
+                      for h,v in result["selection"].items()}},indent=2))
