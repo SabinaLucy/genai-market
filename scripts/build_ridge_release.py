@@ -22,7 +22,13 @@ def build(csv, output):
     from ridge_inference import latest_ridge_features
     for j,h in enumerate(HORIZONS):
         alpha=report["horizons"][str(h)]["alpha"]
-        # Include the final h-specific completed labels, which the shared 10-day\n        # comparison split deliberately excludes for shorter horizons.\n        full_origins=np.arange(59,len(df)-h)\n        full_X=np.vstack([latest_ridge_features(df.iloc[:i+1])[0] for i in full_origins])\n        full_Y=np.log(vix[full_origins+h]/vix[full_origins])\n        model=make_pipeline(StandardScaler(),Ridge(alpha=alpha))\n        model.fit(full_X,full_Y)
+        # Include the final h-specific completed labels, which the shared 10-day
+        # comparison split deliberately excludes for shorter horizons.
+        full_origins=np.arange(59,len(df)-h)
+        full_X=np.vstack([latest_ridge_features(df.iloc[:i+1])[0] for i in full_origins])
+        full_Y=np.log(vix[full_origins+h]/vix[full_origins])
+        model=make_pipeline(StandardScaler(),Ridge(alpha=alpha))
+        model.fit(full_X,full_Y)
         models[h]=model
     bundle={"models":models,"horizons":list(HORIZONS),
             "last_training_date":str(df.index[-1].date()),
