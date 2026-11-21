@@ -55,9 +55,9 @@ def error(y, p):
             "rmse": float(np.sqrt(np.mean((y-p)**2)))}
 
 
-def fit_ridge(x, y, mask, alpha):
+def fit_ridge(x, y, mask, alpha, sample_weight=None):
     model = make_pipeline(StandardScaler(), Ridge(alpha=alpha))
-    model.fit(x[mask], y[mask])
+    model.fit(x[mask], y[mask], ridge__sample_weight=(sample_weight[mask] if sample_weight is not None else np.ones(int(mask.sum()))))
     return model
 
 
@@ -95,6 +95,17 @@ def candidates(x, ext, y, origins, v, train, predict_mask, hidx, alphas,
             model = fit_ridge(xx, y[:,hidx], train, alpha)
             forecasts[f"{name}_a{alpha}"] = origin_vix * np.exp(
                 np.clip(model.predict(xx[predict_mask]), -2, 2))
+    # Simple recent-history regression: only the current VIX and recent lags,
+    # trained on all historical regimes. Crisis weighting is a separate challenger.
+    short = ext[:, [7, 0, 1, 2, 3, 4, 8, 9, 10]]
+    origin_regimes = regime(v[origins])
+    for alpha in alphas:
+        for crisis_weight in (1.0, 2.0, 4.0):
+            weights = np.where(origin_regimes == "CRISIS", crisis_weight, 1.0)
+            model = fit_ridge(short, y[:,hidx], train, alpha, weights)
+            key = f"short_regression_a{alpha}_cw{crisis_weight}"
+            forecasts[key] = origin_vix * np.exp(np.clip(
+                model.predict(short[predict_mask]), -2, 2))
     for speed in rev_speeds:
         for window in rev_windows:
             forecasts[f"mean_reversion_s{speed}_w{window}"] = mean_reversion(
@@ -113,7 +124,7 @@ def run(frame):
     report = {"status": "research_only_not_deployable",
         "splits": {k: int(m.sum()) for k,m in
                    (("train",train),("validation",val),("test",test))},
-        "selection": {}, "walk_forward": {}, "limitations": [
+        "selection": {}, "walk_forward": {}, "limitations": [\n          "Crisis weighting is a validation-selected challenger, not a guarantee of crisis accuracy.",
           "2025+ is a final untouched holdout for model selection.",
           "Crisis holdout is small; report sample counts and avoid claims of reliability.",
           "HAR-style uses VIX levels and statistics, not realized variance.",
@@ -131,7 +142,7 @@ def run(frame):
         ranking = sorted(vp, key=lambda k: (
             error(val_truth,vp[k])["mae"],
             0 if k.startswith("ridge_") else 1, k))
-        base = ranking[0]
+        base = ranking[0]\n        best_short = next(k for k in ranking if k.startswith("short_regression_"))
         # A predeclared blend family: validation-only weights, no regime tuning
         # when there are too few validation samples for that regime.
         ridge_keys = [k for k in ranking if k.startswith("ridge_")]
@@ -157,9 +168,9 @@ def run(frame):
             "validation_mae": error(val_truth, choices[selected])["mae"],
             "validation_regime_counts": {
                 r: int((regime(val_vix)==r).sum()) for r in REGIMES},
-            "best_ridge": best_ridge, "best_statistical": best_stat,
+            "best_ridge": best_ridge, "best_statistical": best_stat,\n            "best_short_regression": best_short,
             "test": {name: evaluate(test_truth, tp[name], test_vix)
-                     for name in ("persistence", best_ridge, best_stat, selected)
+                     for name in ("persistence", best_ridge, best_stat, best_short, selected)
                      if name in tp},
             "test_origin_regime_counts": {
                 r: int((regime(test_vix)==r).sum()) for r in REGIMES}}
@@ -181,7 +192,7 @@ def run(frame):
                 pred[selected] = w*pred[best_ridge]+(1-w)*pred[best_stat]
             folds[str(year)] = {
                 "samples": int(fold_test.sum()),
-                "selected": evaluate(truth,pred[selected],current),
+                "selected": evaluate(truth,pred[selected],current),\n                "short_regression": evaluate(truth,pred[best_short],current),\n                "ridge": evaluate(truth,pred[best_ridge],current),
                 "persistence": evaluate(truth,pred["persistence"],current)}
         report["walk_forward"][str(h)] = folds
     return report
@@ -198,5 +209,5 @@ if __name__ == "__main__":
     print(json.dumps({"status": result["status"], "splits": result["splits"],
         "selection": {h: {"model": v["selected_on_validation"],
                          "test_mae": v["test"][v["selected_on_validation"]]["overall"]["mae"],
-                         "crisis_samples": v["test_origin_regime_counts"]["CRISIS"]}
+                         "crisis_samples": v["test_origin_regime_counts"]["CRISIS"],\n                         "short_regression": v["best_short_regression"],\n                         "short_regression_test_mae": v["test"][v["best_short_regression"]]["overall"]["mae"]}
                       for h,v in result["selection"].items()}},indent=2))
