@@ -124,7 +124,8 @@ def run(frame):
     report = {"status": "research_only_not_deployable",
         "splits": {k: int(m.sum()) for k,m in
                    (("train",train),("validation",val),("test",test))},
-        "selection": {}, "walk_forward": {}, "limitations": [\n          "Crisis weighting is a validation-selected challenger, not a guarantee of crisis accuracy.",
+        "selection": {}, "walk_forward": {}, "limitations": [
+          "Crisis weighting is a validation-selected challenger, not a guarantee of crisis accuracy.",
           "2025+ is a final untouched holdout for model selection.",
           "Crisis holdout is small; report sample counts and avoid claims of reliability.",
           "HAR-style uses VIX levels and statistics, not realized variance.",
@@ -142,7 +143,8 @@ def run(frame):
         ranking = sorted(vp, key=lambda k: (
             error(val_truth,vp[k])["mae"],
             0 if k.startswith("ridge_") else 1, k))
-        base = ranking[0]\n        best_short = next(k for k in ranking if k.startswith("short_regression_"))
+        base = ranking[0]
+        best_short = next(k for k in ranking if k.startswith("short_regression_"))
         # A predeclared blend family: validation-only weights, no regime tuning
         # when there are too few validation samples for that regime.
         ridge_keys = [k for k in ranking if k.startswith("ridge_")]
@@ -168,7 +170,8 @@ def run(frame):
             "validation_mae": error(val_truth, choices[selected])["mae"],
             "validation_regime_counts": {
                 r: int((regime(val_vix)==r).sum()) for r in REGIMES},
-            "best_ridge": best_ridge, "best_statistical": best_stat,\n            "best_short_regression": best_short,
+            "best_ridge": best_ridge, "best_statistical": best_stat,
+            "best_short_regression": best_short,
             "test": {name: evaluate(test_truth, tp[name], test_vix)
                      for name in ("persistence", best_ridge, best_stat, best_short, selected)
                      if name in tp},
@@ -192,7 +195,9 @@ def run(frame):
                 pred[selected] = w*pred[best_ridge]+(1-w)*pred[best_stat]
             folds[str(year)] = {
                 "samples": int(fold_test.sum()),
-                "selected": evaluate(truth,pred[selected],current),\n                "short_regression": evaluate(truth,pred[best_short],current),\n                "ridge": evaluate(truth,pred[best_ridge],current),
+                "selected": evaluate(truth,pred[selected],current),
+                "short_regression": evaluate(truth,pred[best_short],current),
+                "ridge": evaluate(truth,pred[best_ridge],current),
                 "persistence": evaluate(truth,pred["persistence"],current)}
         report["walk_forward"][str(h)] = folds
     return report
@@ -205,9 +210,12 @@ if __name__ == "__main__":
     args = p.parse_args()
     df = pd.read_csv(args.csv, index_col=0, parse_dates=True).sort_index()
     result = run(df)
-    Path(args.output).write_text(json.dumps(result,indent=2)+"\n")
+    Path(args.output).write_text(json.dumps(result,indent=2)+"
+")
     print(json.dumps({"status": result["status"], "splits": result["splits"],
         "selection": {h: {"model": v["selected_on_validation"],
                          "test_mae": v["test"][v["selected_on_validation"]]["overall"]["mae"],
-                         "crisis_samples": v["test_origin_regime_counts"]["CRISIS"],\n                         "short_regression": v["best_short_regression"],\n                         "short_regression_test_mae": v["test"][v["best_short_regression"]]["overall"]["mae"]}
+                         "crisis_samples": v["test_origin_regime_counts"]["CRISIS"],
+                         "short_regression": v["best_short_regression"],
+                         "short_regression_test_mae": v["test"][v["best_short_regression"]]["overall"]["mae"]}
                       for h,v in result["selection"].items()}},indent=2))
