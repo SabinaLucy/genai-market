@@ -1,0 +1,50 @@
+name: Preview FRED and sentiment data quality (no deployment)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/validate_forecast_data.py'
+      - 'scripts/prepare_forecast_data.py'
+      - 'scripts/repair_macro_history.py'
+      - 'scripts/audit_sentiment_freshness.py'
+      - '.github/workflows/data_quality_preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install data tools
+        run: python -m pip install pandas numpy fredapi requests
+      - name: Audit stale sentiment
+        run: |
+          python scripts/audit_sentiment_freshness.py --output sentiment_quality_report.csv
+      - name: Reconstruct macro history into separate copy
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          test -n "$FRED_API_KEY" || { echo "FRED_API_KEY missing"; exit 1; }
+          python scripts/repair_macro_history.py --days 370 --write --output macro_repair_preview.csv
+      - name: Create cleaned forecasting dataset preview
+        run: python scripts/prepare_forecast_data.py --csv macro_repair_preview.csv --output forecast_data_repair_preview.csv
+      - name: Validate repaired dataset before publishing artifacts
+        run: python scripts/validate_forecast_data.py
+      - name: Upload reports only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: volarix-data-quality-preview
+          path: |
+            sentiment_quality_report.csv
+            macro_repair_preview.csv
+            forecast_data_repair_preview.csv
+            forecast_data_integrity.json
+          if-no-files-found: warn

@@ -32,7 +32,7 @@ class VIXDataset(Dataset):
         self.max_h    = max(horizons)
         self.X        = dataframe[feature_cols].values.astype(np.float32)
         self.target   = dataframe[target_col].values.astype(np.float32)
-        self.indices  = list(range(sequence_length, len(dataframe) - self.max_h))
+        self.indices  = list(range(sequence_length, len(dataframe) - self.max_h + 1))
 
     def __len__(self):
         return len(self.indices)
@@ -40,7 +40,7 @@ class VIXDataset(Dataset):
     def __getitem__(self, i):
         idx = self.indices[i]
         x   = self.X[idx - self.seq_len : idx]
-        y   = np.array([self.target[idx + h] for h in self.horizons], dtype=np.float32)
+        y   = np.array([self.target[idx + h - 1] for h in self.horizons], dtype=np.float32)
         return torch.tensor(x), torch.tensor(y), idx
 
 
